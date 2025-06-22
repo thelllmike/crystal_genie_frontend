@@ -10,6 +10,9 @@ class AppColors {
   static const Color primary80  = Color(0xFF1B3535);
   static const Color primary100 = Color(0xFF121E1E);
 
+  // Primary background (for full-screen cards, etc.)
+  static const Color primaryBg  = Color(0xFF98CBCC);
+
   // Accent tones
   static const Color accent    = Color(0xFF00334A);
   static const Color accent20  = Color(0xFF062B3E);
