@@ -64,6 +64,8 @@ flutter:
     - assets/images/logo.png
     - assets/images/item.png
     - assets/images/profile.png
+    - assets/images/takephoto.png
+    - assets/icons/takephotobutton.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

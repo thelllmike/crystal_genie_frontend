@@ -10,7 +10,7 @@ class SplashScreen extends StatefulWidget {
   const SplashScreen({
     Key? key,
     this.duration = const Duration(seconds: 3),
-    this.nextRoute = '/home',
+    this.nextRoute = '/TakePhotoScreen',
   }) : super(key: key);
 
   @override

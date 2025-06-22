@@ -28,6 +28,24 @@ class _HomeScreenState extends State<HomeScreen> {
       'subtitle': 'A stone of mental health and protection',
       'timeAgo':  '2 days ago',
     },
+    {
+      'image':    'assets/images/item.png',
+      'title':    'Aegirine',
+      'subtitle': 'A stone of mental health and protection',
+      'timeAgo':  '2 days ago',
+    },
+    {
+      'image':    'assets/images/item.png',
+      'title':    'Aegirine',
+      'subtitle': 'A stone of mental health and protection',
+      'timeAgo':  '2 days ago',
+    },
+    {
+      'image':    'assets/images/item.png',
+      'title':    'Aegirine',
+      'subtitle': 'A stone of mental health and protection',
+      'timeAgo':  '2 days ago',
+    },
   ];
 
   int _selectedNav = 0;
@@ -47,7 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
               style: const TextStyle(
                 fontFamily: 'Montserrat',
                 fontWeight: FontWeight.w500,
-                fontSize: 72,
+                fontSize: 52,
                 height: 1.0,
                 color: Color(0xFF50B2C8),
               ),
@@ -275,7 +293,7 @@ class _FindCard extends StatelessWidget {
                                     fontFamily: 'Montserrat',
                                     fontWeight: FontWeight.w400,
                                     fontSize: 16,
-                                    color: Colors.white,
+                                    color: AppColors.accent40,
                                   ),
                                 ),
                               ),
