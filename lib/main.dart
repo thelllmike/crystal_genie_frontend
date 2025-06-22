@@ -20,7 +20,7 @@ class CrystalGenieApp extends StatelessWidget {
               duration: Duration(seconds: 3),
               nextRoute: '/home',
             ),
-        '/home': (ctx) => const HomeScreen(),
+        '/home': (ctx) =>  HomeScreen(),
       },
       debugShowCheckedModeBanner: false,
     );
