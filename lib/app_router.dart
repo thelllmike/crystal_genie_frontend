@@ -1,5 +1,6 @@
 import 'package:crystal_genie/ui/screens/TakePhotoScreen.dart';
 import 'package:crystal_genie/ui/screens/explore_screen.dart';
+import 'package:crystal_genie/ui/screens/profile_screen.dart';
 import 'package:crystal_genie/ui/screens/result_screen.dart';
 import 'package:flutter/widgets.dart';
 import 'ui/screens/home_screen.dart';
@@ -14,6 +15,7 @@ class AppRouter {
   static const String takePhoto  = '/take-photo';
   static const String reslut  = '/reslut';
   static const String explore  = '/explore';
+  static const String profile  = '/profile';
   // add more route names here...
 
 
@@ -21,12 +23,13 @@ class AppRouter {
   static Map<String, WidgetBuilder> get routes => {
         splash:   (_) => const SplashScreen(
                       duration: Duration(seconds: 3),
-                      nextRoute: explore,
+                      nextRoute: profile,
                     ),
         home:     (_) => const HomeScreen(),
         takePhoto:(_) => const TakePhotoScreen(),
         reslut:(_) => const ResultScreen(),
         explore:(_) => const ExploreScreen(),
+        profile:(_) => const ProfileScreen(),
         // new screen: (_) => const AnotherScreen(),
       };
 }
