@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import '../../core/constants/colors.dart';
 
-/// Screen showing the result of capturing or selecting a crystal.
+/// Screen showing the result of capturing or selecting a crystal,
+/// with overlapping image and a scrollable detail card that blurs the image beneath.
 class ResultScreen extends StatefulWidget {
   const ResultScreen({Key? key}) : super(key: key);
 
@@ -13,10 +14,11 @@ class ResultScreen extends StatefulWidget {
 
 class _ResultScreenState extends State<ResultScreen> {
   int _selectedNav = 0;
-  final String crystalName   = 'Agnitite';
-  final String subtitle      = 'A stone to harness collective energy';
-  final String imagePath     = 'assets/images/takephoto.png';
-  final String description   = 'The currents of Agnitite are powerful and often make the body feel warm or even hot. '
+  final String crystalName = 'Agnitite';
+  final String subtitle = 'A stone to harness collective energy';
+  final String imagePath = 'assets/images/takephoto.png';
+  final String description =
+      'The currents of Agnitite are powerful and often make the body feel warm or even hot. '
       'They tend to enter through the crown chakra, working their way down to the heart, and flowing from there throughout the body. '
       'Agnitite stimulates the entire liquid crystal body matrix, and helps the body learn to resonate in vibrational unity. '
       'It can enhance qualities such as intuition, healing, strength of will, a sense of one’s purpose, and awareness of one’s shared consciousness with that of the world at large. '
@@ -27,17 +29,21 @@ class _ResultScreenState extends State<ResultScreen> {
       'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. '
       'Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.';
 
+  // Fixed dimensions
+  static const double _imageHeight = 380;
+  static const double _detailHeight = 464;
+  static const double _overlap = 64;
+
   @override
   Widget build(BuildContext context) {
-    final double screenW   = MediaQuery.of(context).size.width;
-    final double pillWidth = screenW - 32;    // 16px padding each side
-    final double frameSize = pillWidth;
+    final double screenW = MediaQuery.of(context).size.width;
+    final double cardWidth = screenW - 32; // padding 16 each side
 
     return Scaffold(
       backgroundColor: AppColors.neutral20,
       body: Stack(
         children: [
-          // "You've got a" behind the header
+          // Background "You've got a" text
           Positioned(
             top: 40,
             left: 16,
@@ -53,168 +59,161 @@ class _ResultScreenState extends State<ResultScreen> {
               ),
             ),
           ),
-
-          // Main content: header, image, details
+          // Content scroll
           SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Column(
-                children: [
-                  // Pill-shaped header bar with crystal name + bookmark
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(99),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
-                      child: Container(
-                        width: pillWidth,
-                        height: 60,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: AppColors.neutral.withOpacity(0.35), // White-35
-                          borderRadius: BorderRadius.circular(99),
-                          border: Border.all(
-                            color: AppColors.neutral.withOpacity(0.5),  // White-50
-                            width: 1,
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Column(
+                  children: [
+                    // Pill-shaped header bar
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(99),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+                        child: Container(
+                          width: cardWidth,
+                          height: 60,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: AppColors.neutral.withOpacity(0.35),
+                            borderRadius: BorderRadius.circular(99),
+                            border: Border.all(
+                              color: AppColors.neutral.withOpacity(0.5),
+                              width: 1,
+                            ),
                           ),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                crystalName,
-                                style: const TextStyle(
-                                  fontFamily: 'PlayfairDisplay',
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 24,
-                                  height: 1.0,
-                                  letterSpacing: 0,
-                                  color: Color(0xFF1A181B),
-                                ),
-                              ),
-                            ),
-                            const Icon(
-                              HugeIcons.strokeRoundedBookmark02,
-                              size: 24,
-                              color: Color(0xFF1A181B),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Crystal image frame
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      width: frameSize,
-                      height: frameSize,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: AppColors.neutral.withOpacity(0.5), // White-50
-                          width: 2,
-                        ),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: Image.asset(
-                          imagePath,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Details container
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: ClipRRect(
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(16),
-                          topRight: Radius.circular(16),
-                        ),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
-                          child: Container(
-                            width: pillWidth,
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: AppColors.neutral.withOpacity(0.5), // White-50
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(16),
-                                topRight: Radius.circular(16),
-                              ),
-                              border: Border.all(
-                                color: AppColors.neutral.withOpacity(0.5), // White-50
-                                width: 1,
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Title
-                                Text(
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
                                   crystalName,
                                   style: const TextStyle(
                                     fontFamily: 'PlayfairDisplay',
-                                    fontWeight: FontWeight.w700,
+                                    fontWeight: FontWeight.w600,
                                     fontSize: 24,
                                     height: 1.0,
-                                    letterSpacing: 0,
+                                    color: Color(0xFF1A181B),
                                   ),
                                 ),
-                                const SizedBox(height: 4),
-                                // Subtitle
-                                Text(
-                                  subtitle,
-                                  style: const TextStyle(
-                                    fontFamily: 'Montserrat',
-                                    fontWeight: FontWeight.w300,
-                                    fontSize: 14,
-                                    height: 1.0,
-                                    letterSpacing: 0,
-                                    fontStyle: FontStyle.italic,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                // Metadata row
-                                Row(
-                                  children: const [
-                                    Icon(HugeIcons.strokeRoundedConstellation, size: 20),
-                                    SizedBox(width: 4),
-                                    Text('N/A', style: TextStyle(fontFamily: 'Montserrat', fontSize: 14)),
-                                    SizedBox(width: 16),
-                                    Icon(HugeIcons.strokeRoundedSpirals, size: 20),
-                                    SizedBox(width: 4),
-                                    Text('Root and earth star', style: TextStyle(fontFamily: 'Montserrat', fontSize: 14)),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
-                                // Description
-                                Text(
-                                  description,
-                                  style: const TextStyle(
-                                    fontFamily: 'Montserrat',
-                                    fontWeight: FontWeight.w400,
-                                    fontSize: 14,
-                                    height: 1.4,
-                                    letterSpacing: 0,
-                                  ),
-                                ),
-                                const SizedBox(height: 80), // spacing for nav
-                              ],
-                            ),
+                              ),
+                              const Icon(
+                                HugeIcons.strokeRoundedBookmark02,
+                                size: 24,
+                                color: Color(0xFF1A181B),
+                              ),
+                            ],
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+
+                    const SizedBox(height: 16),
+
+                    // Overlapping image + details
+                    SizedBox(
+                      width: cardWidth,
+                      height: _imageHeight + _detailHeight - _overlap,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          // Static image frame
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              width: cardWidth,
+                              height: _imageHeight,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: AppColors.neutral.withOpacity(0.5),
+                                  width: 2,
+                                ),
+                              ),
+                              child: Image.asset(
+                                imagePath,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                          // Detail card
+                          Positioned(
+                            top: _imageHeight - _overlap,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(sigmaX: 128, sigmaY: 128),
+                                child: Container(
+                                  width: cardWidth,
+                                  height: _detailHeight,
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0x59FBF5F3),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        crystalName,
+                                        style: const TextStyle(
+                                          fontFamily: 'PlayfairDisplay',
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 24,
+                                          height: 1.0,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        subtitle,
+                                        style: const TextStyle(
+                                          fontFamily: 'Montserrat',
+                                          fontWeight: FontWeight.w300,
+                                          fontSize: 14,
+                                          fontStyle: FontStyle.italic,
+                                          height: 1.0,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Row(
+                                        children: const [
+                                          Icon(HugeIcons.strokeRoundedConstellation, size: 20),
+                                          SizedBox(width: 4),
+                                          Text('N/A', style: TextStyle(fontFamily: 'Montserrat', fontSize: 14)),
+                                          SizedBox(width: 16),
+                                          Icon(HugeIcons.strokeRoundedSpirals, size: 20),
+                                          SizedBox(width: 4),
+                                          Text('Root and earth star', style: TextStyle(fontFamily: 'Montserrat', fontSize: 14)),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 16),
+                                      // Scrollable description within the detail card
+                                      Expanded(
+                                        child: SingleChildScrollView(
+                                          child: Text(
+                                            description,
+                                            style: const TextStyle(
+                                              fontFamily: 'Montserrat',
+                                              fontWeight: FontWeight.w400,
+                                              fontSize: 14,
+                                              height: 1.4,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 100), // spacing to allow full scroll
+                  ],
+                ),
               ),
             ),
           ),
