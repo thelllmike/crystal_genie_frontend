@@ -1,5 +1,3 @@
-// lib/src/ui/screens/take_photo_screen.dart
-
 import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -34,9 +32,7 @@ class _TakePhotoScreenState extends State<TakePhotoScreen> {
   }
 
   Future<void> _startController() async {
-    final lens = _usingFront
-        ? CameraLensDirection.front
-        : CameraLensDirection.back;
+    final lens = _usingFront ? CameraLensDirection.front : CameraLensDirection.back;
     final cam = _cameras.firstWhere(
       (c) => c.lensDirection == lens,
       orElse: () => _cameras.first,
@@ -73,7 +69,6 @@ class _TakePhotoScreenState extends State<TakePhotoScreen> {
   @override
   Widget build(BuildContext context) {
     final screenW = MediaQuery.of(context).size.width;
-    // design specs:
     const frameSize = 380.0;
     const frameLeft = 24.0;
     const frameTop = 128.0;
@@ -88,7 +83,6 @@ class _TakePhotoScreenState extends State<TakePhotoScreen> {
       preview = const Center(child: CircularProgressIndicator());
     }
 
-    // a blur+white overlay widget
     Widget _overlay() => ClipRect(
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
@@ -183,7 +177,7 @@ class _TakePhotoScreenState extends State<TakePhotoScreen> {
             ),
           ),
 
-          // 5) bottom pill with updated shutter button asset
+          // 5) bottom pill with dynamic shutter button
           Positioned(
             bottom: 16,
             left: 16,
@@ -211,7 +205,15 @@ class _TakePhotoScreenState extends State<TakePhotoScreen> {
                         onPressed: _pickFromGallery,
                       ),
                       GestureDetector(
-                        onTap: _takePhoto,
+                        onTap: () {
+                          if (_pickedImage != null) {
+                            // return to camera state
+                            setState(() => _pickedImage = null);
+                          } else {
+                            // take new photo
+                            _takePhoto();
+                          }
+                        },
                         child: Image.asset(
                           'assets/icons/takephotobutton.png',
                           width: 64,
