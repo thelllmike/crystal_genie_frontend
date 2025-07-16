@@ -25,11 +25,11 @@ class AppRouter {
   static Map<String, WidgetBuilder> get routes => {
         splash:   (_) => const SplashScreen(
                       duration: Duration(seconds: 3),
-                      nextRoute: reslut,
+                      nextRoute: takePhoto,
                     ),
         home:     (_) => const HomeScreen(),
         takePhoto:(_) => const TakePhotoScreen(),
-        reslut:(_) => const ResultScreen(),
+        // reslut:(_) => const ResultScreen(),
         explore:(_) => const ExploreScreen(),
         profile:(_) => const ProfileScreen(),
         SavedCrystals:(_) => const SavedCrystalsScreen(),

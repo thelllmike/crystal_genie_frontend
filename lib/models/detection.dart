@@ -27,26 +27,14 @@ class Detection {
 }
 
 class Box {
-  final double x1;
-  final double y1;
-  final double x2;
-  final double y2;
-
-  Box({
-    required this.x1,
-    required this.y1,
-    required this.x2,
-    required this.y2,
-  });
-
-  factory Box.fromJson(Map<String, dynamic> json) {
-    return Box(
-      x1: (json['x1'] as num).toDouble(),
-      y1: (json['y1'] as num).toDouble(),
-      x2: (json['x2'] as num).toDouble(),
-      y2: (json['y2'] as num).toDouble(),
-    );
-  }
+  final double x1, y1, x2, y2;
+  Box({required this.x1, required this.y1, required this.x2, required this.y2});
+  factory Box.fromJson(Map<String, dynamic> j) => Box(
+    x1: (j['x1'] as num).toDouble(),
+    y1: (j['y1'] as num).toDouble(),
+    x2: (j['x2'] as num).toDouble(),
+    y2: (j['y2'] as num).toDouble(),
+  );
 }
 
 class Description {
@@ -64,14 +52,11 @@ class Description {
     this.unnamed5,
   });
 
-  factory Description.fromJson(Map<String, dynamic> json) {
-    return Description(
-      headline: json['Headline'] as String? ?? '',
-      description: json['Description'] as String? ?? '',
-      // note: JSON key has a trailing space
-      starSign: json['Star sign '] as String? ?? '',
-      chakras: json['Chakras'] as String? ?? '',
-      unnamed5: json['Unnamed: 5'] as String?,
-    );
-  }
+  factory Description.fromJson(Map<String, dynamic> j) => Description(
+    headline: j['Headline'] as String? ?? '',
+    description: j['Description'] as String? ?? '',
+    starSign: j['Star sign '] as String? ?? '',
+    chakras: j['Chakras'] as String? ?? '',
+    unnamed5: j['Unnamed: 5'] as String?,
+  );
 }
