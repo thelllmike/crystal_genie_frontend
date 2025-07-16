@@ -37,35 +37,44 @@ class _ResultScreenState extends State<ResultScreen> {
   @override
   Widget build(BuildContext context) {
     final double screenW = MediaQuery.of(context).size.width;
-    final double cardWidth = screenW - 32; // padding 16 each side
+    final double cardWidth = screenW - 32; // 16px padding each side
 
     return Scaffold(
       backgroundColor: AppColors.neutral20,
       body: Stack(
         children: [
-          // Background "You've got a" text
+          // 1) Background "You've got a" text, centered and drawn first
           Positioned(
-            top: 40,
-            left: 16,
-            child: Text(
-              'You\'ve got a',
-              style: const TextStyle(
-                fontFamily: 'Montserrat',
-                fontWeight: FontWeight.w500,
-                fontSize: 32,
-                height: 1.0,
-                letterSpacing: 0,
-                color: AppColors.primary,
+            // you can tweak this top value to align perfectly
+            top: MediaQuery.of(context).padding.top + 20,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Text(
+                'You\'ve got a',
+                style: TextStyle(
+                  fontFamily: 'Montserrat',
+                  fontWeight: FontWeight.w600,
+                  fontSize: 32,
+                  height: 1.0,
+                  letterSpacing: 0,
+                  // keep it light so it reads as a background watermark
+                  color: AppColors.primary,
+                ),
               ),
             ),
           ),
-          // Content scroll
+
+          // 2) The rest of your scrollable content
           SafeArea(
             child: SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Column(
                   children: [
+                    // push the pill header down below the background text
+                    const SizedBox(height: 45),
+
                     // Pill-shaped header bar
                     ClipRRect(
                       borderRadius: BorderRadius.circular(99),
@@ -117,7 +126,7 @@ class _ResultScreenState extends State<ResultScreen> {
                       child: Stack(
                         clipBehavior: Clip.none,
                         children: [
-                          // Static image frame
+                          // Crystal image
                           ClipRRect(
                             borderRadius: BorderRadius.circular(16),
                             child: Container(
@@ -136,7 +145,8 @@ class _ResultScreenState extends State<ResultScreen> {
                               ),
                             ),
                           ),
-                          // Detail card
+
+                          // Detail card that overlaps the image
                           Positioned(
                             top: _imageHeight - _overlap,
                             child: ClipRRect(
@@ -179,15 +189,27 @@ class _ResultScreenState extends State<ResultScreen> {
                                         children: const [
                                           Icon(HugeIcons.strokeRoundedConstellation, size: 20),
                                           SizedBox(width: 4),
-                                          Text('N/A', style: TextStyle(fontFamily: 'Montserrat', fontSize: 14)),
+                                          Text(
+                                            'N/A',
+                                            style: TextStyle(
+                                              fontFamily: 'Montserrat',
+                                              fontSize: 14,
+                                            ),
+                                          ),
                                           SizedBox(width: 16),
                                           Icon(HugeIcons.strokeRoundedSpirals, size: 20),
                                           SizedBox(width: 4),
-                                          Text('Root and earth star', style: TextStyle(fontFamily: 'Montserrat', fontSize: 14)),
+                                          Text(
+                                            'Root and earth star',
+                                            style: TextStyle(
+                                              fontFamily: 'Montserrat',
+                                              fontSize: 14,
+                                            ),
+                                          ),
                                         ],
                                       ),
                                       const SizedBox(height: 16),
-                                      // Scrollable description within the detail card
+                                      // Scrollable description
                                       Expanded(
                                         child: SingleChildScrollView(
                                           child: Text(
@@ -211,7 +233,7 @@ class _ResultScreenState extends State<ResultScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 100), // spacing to allow full scroll
+                    const SizedBox(height: 100), // allow extra scroll space
                   ],
                 ),
               ),
@@ -251,7 +273,9 @@ class _BottomNavBar extends StatelessWidget {
           height: 48,
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: active ? AppColors.primary20.withOpacity(0.35) : Colors.transparent,
+            color: active
+                ? AppColors.primary20.withOpacity(0.35)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(99),
             border: Border.all(
               color: active
@@ -278,7 +302,10 @@ class _BottomNavBar extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.neutral20.withOpacity(0.2),
             borderRadius: BorderRadius.circular(99),
-            border: Border.all(color: AppColors.neutral.withOpacity(0.5), width: 1),
+            border: Border.all(
+              color: AppColors.neutral.withOpacity(0.5),
+              width: 1,
+            ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

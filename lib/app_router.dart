@@ -25,7 +25,7 @@ class AppRouter {
   static Map<String, WidgetBuilder> get routes => {
         splash:   (_) => const SplashScreen(
                       duration: Duration(seconds: 3),
-                      nextRoute: takePhoto,
+                      nextRoute: reslut,
                     ),
         home:     (_) => const HomeScreen(),
         takePhoto:(_) => const TakePhotoScreen(),

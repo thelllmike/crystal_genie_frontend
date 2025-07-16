@@ -36,6 +36,7 @@ dependencies:
   hugeicons: ^0.0.9
   camera: ^0.10.0
   image_picker: ^0.8.7+4
+  http: ^0.13.4
 
   
 
