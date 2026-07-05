@@ -103,7 +103,7 @@ class _CartScreenState extends State<CartScreen> {
       body: Stack(
         children: [
           Positioned(
-            top: MediaQuery.of(context).padding.top + 20,
+            top: MediaQuery.of(context).padding.top + 45,
             left: 0,
             right: 0,
             child: const Center(child: BackgroundTitle(text: 'Your cart')),
@@ -115,7 +115,7 @@ class _CartScreenState extends State<CartScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(
-                      height: MediaQuery.of(context).size.width * 0.06),
+                      height: MediaQuery.of(context).size.width * 0.15),
                   GlassIconButton(
                     icon: HugeIcons.strokeRoundedArrowLeft01,
                     onTap: () => Navigator.of(context).pop(),

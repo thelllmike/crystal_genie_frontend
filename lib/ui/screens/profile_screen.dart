@@ -183,7 +183,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           // Background title (kept below the status bar)
           Positioned(
-            top: topPad + 24,
+            top: topPad + 45,
             left: 0,
             right: 0,
             child: const Center(child: BackgroundTitle(text: 'Profile')),
@@ -220,7 +220,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
 
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 40),
 
                         // Profile card
                         GlassCard(

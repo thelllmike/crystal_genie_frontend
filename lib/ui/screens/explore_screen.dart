@@ -80,7 +80,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
         children: [
           // Background title
           Positioned(
-            top: MediaQuery.of(context).padding.top + 20,
+            top: MediaQuery.of(context).padding.top + 45,
             left: 0,
             right: 0,
             child:
@@ -92,7 +92,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(height: screenWidth * 0.1), // title overlap, like home
+                  SizedBox(height: screenWidth * 0.15), // title overlap, like home
                   // Search & filter row
                   ClipRRect(
                     borderRadius: BorderRadius.circular(16),
