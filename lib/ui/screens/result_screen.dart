@@ -233,30 +233,45 @@ class _ResultScreenState extends State<ResultScreen> {
                                     fontWeight: FontWeight.w300,
                                     fontSize: 14,
                                     fontStyle: FontStyle.italic,
+                                    color: Color(0xFF5E5E5E),
                                   ),
                                 ),
                               ],
-                              if (star.isNotEmpty || chakras.isNotEmpty) ...[
-                                const SizedBox(height: 16),
-                                Row(
-                                  children: [
-                                    if (star.isNotEmpty) ...[
-                                      const Icon(
-                                          HugeIcons.strokeRoundedConstellation,
-                                          size: 20),
-                                      const SizedBox(width: 4),
-                                      Text(star),
-                                      const SizedBox(width: 16),
-                                    ],
-                                    if (chakras.isNotEmpty) ...[
-                                      const Icon(HugeIcons.strokeRoundedSpirals,
-                                          size: 20),
-                                      const SizedBox(width: 4),
-                                      Flexible(child: Text(chakras)),
-                                    ],
-                                  ],
-                                ),
-                              ],
+                              // Star sign + chakra row (always shown, like the design)
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  const Icon(
+                                      HugeIcons.strokeRoundedConstellation,
+                                      size: 20,
+                                      color: Color(0xFF1A181B)),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    star.isNotEmpty ? star : 'N/A',
+                                    style: const TextStyle(
+                                      fontFamily: 'Montserrat',
+                                      fontSize: 13,
+                                      color: Color(0xFF1A181B),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  const Icon(HugeIcons.strokeRoundedSpirals,
+                                      size: 20, color: Color(0xFF1A181B)),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      chakras.isNotEmpty ? chakras : 'N/A',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontFamily: 'Montserrat',
+                                        fontSize: 13,
+                                        color: Color(0xFF1A181B),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                               const SizedBox(height: 16),
                               Text(
                                 desc.isNotEmpty
@@ -266,7 +281,7 @@ class _ResultScreenState extends State<ResultScreen> {
                                   fontFamily: 'Montserrat',
                                   fontWeight: FontWeight.w400,
                                   fontSize: 14,
-                                  height: 1.4,
+                                  height: 1.5,
                                   fontStyle: desc.isNotEmpty
                                       ? FontStyle.normal
                                       : FontStyle.italic,
