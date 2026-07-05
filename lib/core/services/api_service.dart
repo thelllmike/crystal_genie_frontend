@@ -12,7 +12,7 @@ import '../../models/detection.dart';
 
 class ApiService {
   // your real-device IP & port:
-  static const _baseUrl = 'http://192.168.1.101:8000';
+  static const _baseUrl = 'http://192.168.1.100:8000';
 
   Future<List<Detection>> detectCrystal(String filePath) async {
     final uri = Uri.parse('$_baseUrl/detect');

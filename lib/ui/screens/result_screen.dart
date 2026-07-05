@@ -5,10 +5,14 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 
+import '../../app_router.dart';
 import '../../core/constants/colors.dart';
+import '../../core/services/auth_service.dart';
+import '../../core/services/db_service.dart';
 import '../../models/detection.dart';
+import '../widgets/bottom_nav_bar.dart';
 
-class ResultScreen extends StatelessWidget {
+class ResultScreen extends StatefulWidget {
   final File imageFile;
   final List<Detection> detections;
 
@@ -19,6 +23,54 @@ class ResultScreen extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<ResultScreen> createState() => _ResultScreenState();
+}
+
+class _ResultScreenState extends State<ResultScreen> {
+  bool _saved = false;
+
+  File get imageFile => widget.imageFile;
+  List<Detection> get detections => widget.detections;
+
+  Future<void> _saveCrystal() async {
+    if (_saved) return;
+    if (!AuthService.isLoggedIn) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign in to save crystals')),
+      );
+      return;
+    }
+    final det = detections.first;
+    try {
+      await DbService.saveCrystal(
+        crystalName: det.className,
+        headline: det.description.headline,
+      );
+      if (!mounted) return;
+      setState(() => _saved = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${det.className} saved')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not save: $e')),
+      );
+    }
+  }
+
+  void _onNavTap(int idx) {
+    if (idx == 0) {
+      Navigator.of(context)
+          .pushNamedAndRemoveUntil(AppRouter.home, (r) => false);
+    } else if (idx == 1) {
+      Navigator.of(context).pop(); // back to camera
+    } else {
+      Navigator.of(context).pushNamed(AppRouter.explore);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final det      = detections.first;
     final name     = det.className;
@@ -26,10 +78,9 @@ class ResultScreen extends StatelessWidget {
     final desc     = det.description.description;
     final star     = det.description.starSign;
     final chakras  = det.description.chakras;
-    final conf     = (det.confidence * 100).toStringAsFixed(1) + '%';
+    final conf     = '${(det.confidence * 100).toStringAsFixed(0)}% match';
 
     const imgH    = 380.0;
-    const detailH = 464.0;
     const overlap =  64.0;
     final cardW   = MediaQuery.of(context).size.width - 32;
 
@@ -89,10 +140,17 @@ class ResultScreen extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            const Icon(
-                              HugeIcons.strokeRoundedBookmark02,
-                              size: 24,
-                              color: Color(0xFF1A181B),
+                            GestureDetector(
+                              onTap: _saveCrystal,
+                              child: Icon(
+                                _saved
+                                    ? HugeIcons.strokeRoundedBookmarkCheck02
+                                    : HugeIcons.strokeRoundedBookmark02,
+                                size: 24,
+                                color: _saved
+                                    ? AppColors.primary40
+                                    : const Color(0xFF1A181B),
+                              ),
                             ),
                           ],
                         ),
@@ -102,44 +160,41 @@ class ResultScreen extends StatelessWidget {
 
                   const SizedBox(height: 16),
 
-                  // Image + details
-                  SizedBox(
-                    width: cardW,
-                    height: imgH + detailH - overlap,
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        // image
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: Container(
-                            width: cardW, height: imgH,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: AppColors.neutral.withOpacity(0.5), width: 2),
-                            ),
-                            child: Image.file(imageFile, fit: BoxFit.cover),
-                          ),
-                        ),
+                  // Image
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      width: cardW, height: imgH,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.neutral.withOpacity(0.5), width: 2),
+                      ),
+                      child: Image.file(imageFile, fit: BoxFit.cover),
+                    ),
+                  ),
 
-                        // detail card
-                        Positioned(
-                          top: imgH - overlap,
-                          child: ClipRRect(
+                  // Detail card overlapping the image, sized to its content
+                  Transform.translate(
+                    offset: const Offset(0, -overlap),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 128, sigmaY: 128),
+                        child: Container(
+                          width: cardW,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0x59FBF5F3),
                             borderRadius: BorderRadius.circular(16),
-                            child: BackdropFilter(
-                              filter: ImageFilter.blur(sigmaX: 128, sigmaY: 128),
-                              child: Container(
-                                width: cardW, height: detailH,
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: const Color(0x59FBF5F3),
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Expanded(
+                                    child: Text(
                                       name,
                                       style: const TextStyle(
                                         fontFamily: 'PlayfairDisplay',
@@ -147,53 +202,87 @@ class ResultScreen extends StatelessWidget {
                                         fontSize: 24,
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      headline,
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0x3434A0A4),
+                                      borderRadius: BorderRadius.circular(99),
+                                      border: Border.all(
+                                          color: const Color(0x5934A0A4)),
+                                    ),
+                                    child: Text(
+                                      conf,
                                       style: const TextStyle(
                                         fontFamily: 'Montserrat',
-                                        fontWeight: FontWeight.w300,
-                                        fontSize: 14,
-                                        fontStyle: FontStyle.italic,
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 12,
+                                        color: AppColors.primary40,
                                       ),
                                     ),
-                                    const SizedBox(height: 16),
-                                    Row(
-                                      children: [
-                                        const Icon(HugeIcons.strokeRoundedConstellation, size: 20),
-                                        const SizedBox(width: 4),
-                                        Text(star),
-                                        const SizedBox(width: 16),
-                                        const Icon(HugeIcons.strokeRoundedSpirals, size: 20),
-                                        const SizedBox(width: 4),
-                                        Text(chakras),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Expanded(
-                                      child: SingleChildScrollView(
-                                        child: Text(
-                                          desc,
-                                          style: const TextStyle(
-                                            fontFamily: 'Montserrat',
-                                            fontWeight: FontWeight.w400,
-                                            fontSize: 14,
-                                            height: 1.4,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (headline.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  headline,
+                                  style: const TextStyle(
+                                    fontFamily: 'Montserrat',
+                                    fontWeight: FontWeight.w300,
+                                    fontSize: 14,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ],
+                              if (star.isNotEmpty || chakras.isNotEmpty) ...[
+                                const SizedBox(height: 16),
+                                Row(
+                                  children: [
+                                    if (star.isNotEmpty) ...[
+                                      const Icon(
+                                          HugeIcons.strokeRoundedConstellation,
+                                          size: 20),
+                                      const SizedBox(width: 4),
+                                      Text(star),
+                                      const SizedBox(width: 16),
+                                    ],
+                                    if (chakras.isNotEmpty) ...[
+                                      const Icon(HugeIcons.strokeRoundedSpirals,
+                                          size: 20),
+                                      const SizedBox(width: 4),
+                                      Flexible(child: Text(chakras)),
+                                    ],
                                   ],
                                 ),
+                              ],
+                              const SizedBox(height: 16),
+                              Text(
+                                desc.isNotEmpty
+                                    ? desc
+                                    : 'No description available for this crystal yet.',
+                                style: TextStyle(
+                                  fontFamily: 'Montserrat',
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: 14,
+                                  height: 1.4,
+                                  fontStyle: desc.isNotEmpty
+                                      ? FontStyle.normal
+                                      : FontStyle.italic,
+                                  color: desc.isNotEmpty
+                                      ? const Color(0xFF1A181B)
+                                      : const Color(0xFF5E5E5E),
+                                ),
                               ),
-                            ),
+                            ],
                           ),
                         ),
-                      ],
+                      ),
                     ),
                   ),
 
-                  const SizedBox(height: 100),
+                  const SizedBox(height: 36),
                 ],
               ),
             ),
@@ -202,7 +291,7 @@ class ResultScreen extends StatelessWidget {
           // bottom nav
           Positioned(
             bottom: 16, left: 16, right: 16,
-            child: _BottomNavBar(selectedIndex: 2, onTap: (_) {}),
+            child: BottomNavBar(selectedIndex: 1, onTap: _onNavTap),
           ),
         ],
       ),
@@ -210,58 +299,3 @@ class ResultScreen extends StatelessWidget {
   }
 }
 
-class _BottomNavBar extends StatelessWidget {
-  final int selectedIndex;
-  final ValueChanged<int> onTap;
-  const _BottomNavBar({required this.selectedIndex, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    Widget item(IconData icon, int idx) {
-      final active = idx == selectedIndex;
-      return GestureDetector(
-        onTap: () => onTap(idx),
-        child: Container(
-          width: 48, height: 48, padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: active
-                ? AppColors.primary20.withOpacity(0.35)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(99),
-            border: Border.all(
-              color: active
-                  ? AppColors.primary20.withOpacity(0.35)
-                  : AppColors.neutral.withOpacity(0.5),
-              width: 1,
-            ),
-          ),
-          child: Icon(icon, color: active ? AppColors.primary60 : AppColors.neutral100),
-        ),
-      );
-    }
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(99),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
-          height: 80,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: AppColors.neutral20.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(99),
-            border: Border.all(color: AppColors.neutral.withOpacity(0.5), width: 1),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              item(HugeIcons.strokeRoundedHome08,   0),
-              item(HugeIcons.strokeRoundedIrisScan, 1),
-              item(HugeIcons.strokeRoundedGem,      2),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}

@@ -1,32 +1,37 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
-import '../../core/constants/colors.dart';
+import '../../app_router.dart';
+import '../../core/services/auth_service.dart';
+import '../../core/services/db_service.dart';
+import '../../models/find.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../widgets/find_card.dart';
+import '../widgets/glass.dart';
 
 /// Home screen displaying recent crystal finds with responsive layout.
 class HomeScreen extends StatefulWidget {
-  final String userName;
-  const HomeScreen({Key? key, this.userName = 'Jon'}) : super(key: key);
+  const HomeScreen({Key? key}) : super(key: key);
 
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final String profileImg = 'assets/images/profile.png';
-  final List<Map<String, String>> finds = List.generate(
-    5,
-    (_) => {
-      'image': 'assets/images/item.png',
-      'title': 'Aegirine',
-      'subtitle': 'A stone of mental health and protection',
-      'timeAgo': '2 days ago',
-    },
-  );
+  late Future<List<Find>> _finds;
 
-  int _selectedNav = 0;
+  @override
+  void initState() {
+    super.initState();
+    _finds = DbService.recentFinds();
+  }
+
+  void _onNavTap(int idx) {
+    if (idx == 0) return;
+    Navigator.of(context).pushNamed(
+      idx == 1 ? AppRouter.takePhoto : AppRouter.explore,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,22 +45,11 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Stack(
           children: [
             // Centered “Hi welcome,” behind the bar
-            Positioned(
+            const Positioned(
               top: 45,
               left: 0,
               right: 0,
-              child: Center(
-                child: Text(
-                  'Hi welcome,',
-                  style: TextStyle(
-                    fontFamily: 'Montserrat',
-                    fontWeight: FontWeight.w600,
-                    fontSize: width * 0.08,
-                    height: 1.0,
-                    color: const Color(0xFF50B2C8),
-                  ),
-                ),
-              ),
+              child: Center(child: BackgroundTitle(text: 'Hi welcome,')),
             ),
 
             // Main content
@@ -84,22 +78,54 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         child: Row(
                           children: [
-                            CircleAvatar(
-                              radius: 18,
-                              backgroundImage: AssetImage(profileImg),
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              widget.userName,
-                              style: const TextStyle(
-                                fontFamily: 'Montserrat',
-                                fontWeight: FontWeight.w500,
-                                fontSize: 18,
+                            GestureDetector(
+                              onTap: () => Navigator.of(context)
+                                  .pushNamed(AppRouter.profile),
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 18,
+                                    backgroundColor:
+                                        const Color(0xFF34A0A4),
+                                    child: Text(
+                                      AuthService.initials,
+                                      style: const TextStyle(
+                                        fontFamily: 'Montserrat',
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 13,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    AuthService.displayName,
+                                    style: const TextStyle(
+                                      fontFamily: 'Montserrat',
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 18,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                             const Spacer(),
-                            const Icon(HugeIcons.strokeRoundedSettings03,
-                                size: 24, color: Colors.black87),
+                            IconButton(
+                              icon: const Icon(
+                                  HugeIcons.strokeRoundedShoppingBag02,
+                                  size: 24,
+                                  color: Colors.black87),
+                              onPressed: () => Navigator.of(context)
+                                  .pushNamed(AppRouter.shop),
+                            ),
+                            IconButton(
+                              icon: const Icon(
+                                  HugeIcons.strokeRoundedSettings03,
+                                  size: 24,
+                                  color: Colors.black87),
+                              onPressed: () => Navigator.of(context)
+                                  .pushNamed(AppRouter.profile),
+                            ),
                           ],
                         ),
                       ),
@@ -121,17 +147,41 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   // List of FindCards
                   Expanded(
-                    child: ListView.separated(
-                      itemCount: finds.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 16),
-                      itemBuilder: (_, i) {
-                        final f = finds[i];
-                        return FindCard(
-                          width: cardWidth,
-                          imagePath: f['image']!,
-                          title: f['title']!,
-                          subtitle: f['subtitle']!,
-                          timeAgo: f['timeAgo']!,
+                    child: FutureBuilder<List<Find>>(
+                      future: _finds,
+                      builder: (context, snap) {
+                        if (snap.connectionState != ConnectionState.done) {
+                          return const Center(
+                              child: CircularProgressIndicator());
+                        }
+                        final finds = snap.data ?? [];
+                        if (finds.isEmpty) {
+                          return const Center(
+                            child: Text(
+                              'No finds yet — scan your first crystal!',
+                              style: TextStyle(
+                                fontFamily: 'Montserrat',
+                                fontSize: 16,
+                                color: Colors.black54,
+                              ),
+                            ),
+                          );
+                        }
+                        return ListView.separated(
+                          padding: const EdgeInsets.only(bottom: 100),
+                          itemCount: finds.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 16),
+                          itemBuilder: (_, i) {
+                            final f = finds[i];
+                            return FindCard(
+                              width: cardWidth,
+                              imagePath: 'assets/images/item.png',
+                              title: f.crystalName,
+                              subtitle: f.headline,
+                              timeAgo: f.timeAgo,
+                            );
+                          },
                         );
                       },
                     ),
@@ -146,8 +196,8 @@ class _HomeScreenState extends State<HomeScreen> {
               left: padding,
               right: padding,
               child: BottomNavBar(
-                selectedIndex: _selectedNav,
-                onTap: (idx) => setState(() => _selectedNav = idx),
+                selectedIndex: 0,
+                onTap: _onNavTap,
               ),
             ),
           ],

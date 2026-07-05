@@ -1,30 +1,32 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+import 'package:flutter_test/flutter_test.dart' hide Description;
 
-import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
-
-import 'package:crystal_genie/main.dart';
+import 'package:crystal_genie/models/detection.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  test('Detection parses the backend /detect JSON', () {
+    final det = Detection.fromJson({
+      'class_id': 0,
+      'class_name': 'Amethyst',
+      'confidence': 0.93,
+      'box': {'x1': 1.0, 'y1': 2.0, 'x2': 3.0, 'y2': 4.0},
+      'description': {
+        'headline': 'The stone of calm',
+        'description': 'A violet quartz...',
+        'star_sign': 'Pisces',
+        'chakras': 'Crown',
+      },
+    });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(det.className, 'Amethyst');
+    expect(det.confidence, closeTo(0.93, 1e-9));
+    expect(det.box.x2, 3.0);
+    expect(det.description.headline, 'The stone of calm');
+    expect(det.description.starSign, 'Pisces');
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+  test('Description tolerates missing fields', () {
+    final desc = Description.fromJson(const {});
+    expect(desc.headline, '');
+    expect(desc.chakras, '');
   });
 }

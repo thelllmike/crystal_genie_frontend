@@ -1,7 +1,12 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
+import '../../app_router.dart';
 import '../../core/constants/colors.dart';
+import '../../core/services/db_service.dart';
+import '../../models/find.dart';
+import '../widgets/bottom_nav_bar.dart';
+import '../widgets/glass.dart';
 
 /// Screen showing user's saved crystals with tabs for "My finds" and "Favorites".
 class SavedCrystalsScreen extends StatefulWidget {
@@ -14,17 +19,56 @@ class SavedCrystalsScreen extends StatefulWidget {
 class _SavedCrystalsScreenState extends State<SavedCrystalsScreen> {
   final TextEditingController _searchController = TextEditingController();
   int _selectedTab = 0; // 0 = My finds, 1 = Favorites
+  String _query = '';
 
-  // Sample data
-  final List<Map<String, String>> _myFinds = List.generate(
-    4,
-    (_) => {
-      'image': 'assets/images/item.png',
-      'name': 'Aegirine',
-      'description': 'The currents of Aegirine are powerful and often make the body feel warm or even hot. They tend to enter through the crown chakra, working their way down to the heart,...'
-    },
-  );
-  final List<Map<String, String>> _favorites = <Map<String, String>>[];
+  List<Find> _myFinds = [];
+  List<Find> _favorites = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final results =
+          await Future.wait([DbService.recentFinds(), DbService.savedCrystals()]);
+      if (!mounted) return;
+      setState(() {
+        _myFinds = results[0];
+        _favorites = results[1];
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not load saved crystals: $e')),
+      );
+    }
+  }
+
+  List<Find> get _visible {
+    final source = _selectedTab == 0 ? _myFinds : _favorites;
+    if (_query.isEmpty) return source;
+    final q = _query.toLowerCase();
+    return source
+        .where((f) => f.crystalName.toLowerCase().contains(q))
+        .toList();
+  }
+
+  void _onNavTap(int idx) {
+    if (idx == 0) {
+      Navigator.of(context)
+          .pushNamedAndRemoveUntil(AppRouter.home, (r) => false);
+    } else if (idx == 1) {
+      Navigator.of(context).pushNamed(AppRouter.takePhoto);
+    } else {
+      Navigator.of(context).pushNamed(AppRouter.explore);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,19 +81,11 @@ class _SavedCrystalsScreenState extends State<SavedCrystalsScreen> {
         children: [
           // Background title
           Positioned(
-            top: 20,
-            left: 16,
-            child: Text(
-              'Saved Crystals',
-              style: const TextStyle(
-                fontFamily: 'Montserrat',
-                fontWeight: FontWeight.w500,
-                fontSize: 52,
-                height: 1.0,
-                letterSpacing: 0,
-                color: Color(0xFF34A0A4),
-              ).copyWith(color: const Color(0xFF34A0A4).withOpacity(0.3)),
-            ),
+            top: MediaQuery.of(context).padding.top + 20,
+            left: 0,
+            right: 0,
+            child:
+                const Center(child: BackgroundTitle(text: 'Saved Crystals')),
           ),
           SafeArea(
             child: Padding(
@@ -57,7 +93,7 @@ class _SavedCrystalsScreenState extends State<SavedCrystalsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 60),
+                  SizedBox(height: screenW * 0.1), // title overlap, like home
 
                   // Search bar + grid toggle
                   ClipRRect(
@@ -88,6 +124,8 @@ class _SavedCrystalsScreenState extends State<SavedCrystalsScreen> {
                                   Expanded(
                                     child: TextField(
                                       controller: _searchController,
+                                      onChanged: (v) =>
+                                          setState(() => _query = v.trim()),
                                       decoration: const InputDecoration(
                                         border: InputBorder.none,
                                         isCollapsed: true,
@@ -198,18 +236,37 @@ class _SavedCrystalsScreenState extends State<SavedCrystalsScreen> {
 
                   // List
                   Expanded(
-                    child: ListView.separated(
-                      itemCount: _selectedTab == 0 ? _myFinds.length : _favorites.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 16),
-                      itemBuilder: (context, i) {
-                        final item = (_selectedTab == 0 ? _myFinds : _favorites)[i];
-                        return _SavedCard(
-                          imagePath: item['image']!,
-                          title: item['name']!,
-                          description: item['description']!,
-                        );
-                      },
-                    ),
+                    child: _loading
+                        ? const Center(child: CircularProgressIndicator())
+                        : _visible.isEmpty
+                            ? Center(
+                                child: Text(
+                                  _selectedTab == 0
+                                      ? 'No finds yet — scan your first crystal!'
+                                      : 'No favorites yet — bookmark a result to save it',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontFamily: 'Montserrat',
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              )
+                            : ListView.separated(
+                                padding: const EdgeInsets.only(bottom: 100),
+                                itemCount: _visible.length,
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(height: 16),
+                                itemBuilder: (context, i) {
+                                  final item = _visible[i];
+                                  return _SavedCard(
+                                    imagePath: 'assets/images/item.png',
+                                    title: item.crystalName,
+                                    description: item.headline.isNotEmpty
+                                        ? item.headline
+                                        : item.timeAgo,
+                                  );
+                                },
+                              ),
                   ),
                 ],
               ),
@@ -221,9 +278,9 @@ class _SavedCrystalsScreenState extends State<SavedCrystalsScreen> {
             bottom: 16,
             left: 16,
             right: 16,
-            child: _BottomNavBar(
+            child: BottomNavBar(
               selectedIndex: 0,
-              onTap: (_) {},
+              onTap: _onNavTap,
             ),
           ),
         ],
@@ -251,9 +308,9 @@ class _SavedCard extends StatelessWidget {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
         child: Container(
-          width: 380,
-          height: 138,
-          padding: const EdgeInsets.all(4),
+          width: double.infinity,
+          height: 130,
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: const Color(0x80FBF5F3),
             borderRadius: BorderRadius.circular(16),
@@ -262,10 +319,10 @@ class _SavedCard extends StatelessWidget {
             children: [
               // image
               Container(
-                width: 130,
-                height: 130,
+                width: 114,
+                height: 114,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: const Color(0xFFFBF5F3), width: 1),
                   image: DecorationImage(
                     image: AssetImage(imagePath),
@@ -273,7 +330,7 @@ class _SavedCard extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               // details
               Expanded(
                 child: Column(
@@ -281,14 +338,17 @@ class _SavedCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontFamily: 'PlayfairDisplay',
-                        fontWeight: FontWeight.w400,
-                        fontSize: 24,
-                        height: 1.0,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 20,
+                        height: 1.1,
+                        color: Color(0xFF1A181B),
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text(
                       description,
                       maxLines: 2,
@@ -296,8 +356,9 @@ class _SavedCard extends StatelessWidget {
                       style: const TextStyle(
                         fontFamily: 'Montserrat',
                         fontWeight: FontWeight.w300,
-                        fontSize: 8,
-                        height: 1.0,
+                        fontSize: 12,
+                        height: 1.3,
+                        color: Color(0xFF5E5E5E),
                       ),
                     ),
                     const Spacer(),
@@ -376,57 +437,3 @@ class _SavedCard extends StatelessWidget {
   }
 }
 
-/// Reusable bottom nav bar (same as other screens)
-class _BottomNavBar extends StatelessWidget {
-  final int selectedIndex;
-  final void Function(int) onTap;
-  const _BottomNavBar({required this.selectedIndex, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    Widget _item(IconData icon, int idx) {
-      final bool active = idx == selectedIndex;
-      return GestureDetector(
-        onTap: () => onTap(idx),
-        child: Container(
-          width: 48,
-          height: 48,
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: active ? AppColors.primary20.withOpacity(0.35) : Colors.transparent,
-            borderRadius: BorderRadius.circular(99),
-            border: Border.all(
-              color: active ? AppColors.primary20.withOpacity(0.35) : AppColors.neutral.withOpacity(0.5),
-              width: 1,
-            ),
-          ),
-          child: Icon(icon, color: active ? AppColors.primary60 : AppColors.neutral100),
-        ),
-      );
-    }
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(99),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
-          height: 80,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: AppColors.neutral20.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(99),
-            border: Border.all(color: AppColors.neutral.withOpacity(0.5), width: 1),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _item(HugeIcons.strokeRoundedHome08, 0),
-              _item(HugeIcons.strokeRoundedIrisScan, 1),
-              _item(HugeIcons.strokeRoundedGem, 2),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}

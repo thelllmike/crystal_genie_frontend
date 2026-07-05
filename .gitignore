@@ -41,3 +41,9 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# YOLO training output (model weights are too large for git)
+/detect/
+
+# Backend virtualenv
+/backend/.venv/

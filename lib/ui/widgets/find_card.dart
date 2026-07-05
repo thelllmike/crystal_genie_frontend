@@ -29,7 +29,7 @@ class FindCard extends StatelessWidget {
         child: Container(
           width: width,
           height: 140,
-          padding: const EdgeInsets.all(4),
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: const Color(0x80FBF5F3),
             borderRadius: BorderRadius.circular(16),
@@ -39,10 +39,10 @@ class FindCard extends StatelessWidget {
             children: [
               // fixed-size image
               Container(
-                width: 130,
-                height: 130,
+                width: 124,
+                height: 124,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.white, width: 1),
                   image: DecorationImage(
                     image: AssetImage(imagePath),
@@ -50,7 +50,7 @@ class FindCard extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               // flexible content
               Expanded(
                 child: Padding(
@@ -67,32 +67,34 @@ class FindCard extends StatelessWidget {
                             title,
                             style: const TextStyle(
                               fontFamily: 'PlayfairDisplay',
-                              fontWeight: FontWeight.w400,
-                              fontSize: 24,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 20,
+                              height: 1.1,
                               color: Color(0xFF1A181B),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 2),
                           Text(
                             subtitle,
                             style: const TextStyle(
                               fontFamily: 'Montserrat',
                               fontWeight: FontWeight.w300,
-                              fontSize: 8,
-                              color: Color(0xFF1A181B),
+                              fontStyle: FontStyle.italic,
+                              fontSize: 12,
+                              color: Color(0xFF5E5E5E),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 2),
                           Text(
                             timeAgo,
                             style: const TextStyle(
                               fontFamily: 'Montserrat',
-                              fontSize: 12,
-                              color: Color(0xFF5E5E5E),
+                              fontSize: 11,
+                              color: Color(0xFF919191),
                             ),
                           ),
                         ],

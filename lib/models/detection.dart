@@ -42,21 +42,18 @@ class Description {
   final String description;
   final String starSign;
   final String chakras;
-  final String? unnamed5;
 
   Description({
     required this.headline,
     required this.description,
     required this.starSign,
     required this.chakras,
-    this.unnamed5,
   });
 
   factory Description.fromJson(Map<String, dynamic> j) => Description(
-    headline: j['Headline'] as String? ?? '',
-    description: j['Description'] as String? ?? '',
-    starSign: j['Star sign '] as String? ?? '',
-    chakras: j['Chakras'] as String? ?? '',
-    unnamed5: j['Unnamed: 5'] as String?,
+    headline: j['headline'] as String? ?? '',
+    description: j['description'] as String? ?? '',
+    starSign: j['star_sign'] as String? ?? '',
+    chakras: j['chakras'] as String? ?? '',
   );
 }

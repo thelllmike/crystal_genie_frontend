@@ -9,6 +9,8 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../core/constants/colors.dart';
 import '../../core/services/api_service.dart';
+import '../../core/services/auth_service.dart';
+import '../../core/services/db_service.dart';
 import 'result_screen.dart';
 
 class TakePhotoScreen extends StatefulWidget {
@@ -18,9 +20,10 @@ class TakePhotoScreen extends StatefulWidget {
 }
 
 class _TakePhotoScreenState extends State<TakePhotoScreen> {
-  late final List<CameraDescription> _cameras;
+  List<CameraDescription> _cameras = [];
   CameraController? _controller;
   bool _usingFront = false;
+  bool _noCamera = false;
   XFile? _pickedImage;
   final _picker = ImagePicker();
 
@@ -29,11 +32,18 @@ class _TakePhotoScreenState extends State<TakePhotoScreen> {
     super.initState();
     availableCameras().then((cams) {
       _cameras = cams;
+      if (cams.isEmpty) {
+        if (mounted) setState(() => _noCamera = true);
+        return;
+      }
       _restartController();
+    }).catchError((_) {
+      if (mounted) setState(() => _noCamera = true);
     });
   }
 
   Future<void> _restartController() async {
+    if (_cameras.isEmpty) return;
     final cam = _cameras.firstWhere(
       (c) => c.lensDirection == (_usingFront ? CameraLensDirection.front : CameraLensDirection.back),
       orElse: () => _cameras.first,
@@ -79,7 +89,24 @@ class _TakePhotoScreenState extends State<TakePhotoScreen> {
     );
     try {
       final dets = await ApiService().detectCrystal(file.path);
+      if (!mounted) return;
       Navigator.of(context).pop(); // hide loader
+      if (dets.isEmpty) {
+        setState(() => _pickedImage = null);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No crystal detected — keep it within the frame and try again'),
+          ),
+        );
+        return;
+      }
+      // Record the find in the user's history (best effort).
+      if (AuthService.isLoggedIn) {
+        DbService.addFind(
+          crystalName: dets.first.className,
+          headline: dets.first.description.headline,
+        ).catchError((e) => debugPrint('Could not save find: $e'));
+      }
       Navigator.of(context).push(MaterialPageRoute(
         builder: (_) => ResultScreen(
           imageFile: File(file.path),
@@ -87,6 +114,7 @@ class _TakePhotoScreenState extends State<TakePhotoScreen> {
         ),
       ));
     } catch (e) {
+      if (!mounted) return;
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e')),
@@ -97,7 +125,10 @@ class _TakePhotoScreenState extends State<TakePhotoScreen> {
   @override
   Widget build(BuildContext context) {
     final w = MediaQuery.of(context).size.width;
-    const frameSize = 380.0, frameLeft = 24.0, frameTop = 128.0;
+    // Keep the capture frame inside the screen on narrow devices.
+    final frameSize = (w - 48.0).clamp(200.0, 380.0);
+    final frameLeft = (w - frameSize) / 2;
+    const frameTop = 128.0;
     final pillW = w - 32.0;
 
     Widget preview;
@@ -105,6 +136,14 @@ class _TakePhotoScreenState extends State<TakePhotoScreen> {
       preview = Image.file(File(_pickedImage!.path), fit: BoxFit.cover);
     } else if (_controller?.value.isInitialized ?? false) {
       preview = CameraPreview(_controller!);
+    } else if (_noCamera) {
+      preview = const Center(
+        child: Text(
+          'No camera available —\npick a photo from the gallery',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontFamily: 'Montserrat', fontSize: 16),
+        ),
+      );
     } else {
       preview = const Center(child: CircularProgressIndicator());
     }

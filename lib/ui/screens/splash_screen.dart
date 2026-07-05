@@ -1,16 +1,16 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 
+import '../../app_router.dart';
+import '../../core/services/auth_service.dart';
+
 class SplashScreen extends StatefulWidget {
   /// How long to show the splash before navigating on
   final Duration duration;
-  /// The route name to push after the splash
-  final String nextRoute;
 
   const SplashScreen({
     Key? key,
     this.duration = const Duration(seconds: 3),
-    this.nextRoute = '/TakePhotoScreen',
   }) : super(key: key);
 
   @override
@@ -37,9 +37,12 @@ class _SplashScreenState extends State<SplashScreen>
     );
     _animController.forward();
 
-    // After [duration], navigate to next screen
+    // After [duration], go home when a session exists, otherwise to login
     Timer(widget.duration, () {
-      Navigator.of(context).pushReplacementNamed(widget.nextRoute);
+      if (!mounted) return;
+      Navigator.of(context).pushReplacementNamed(
+        AuthService.isLoggedIn ? AppRouter.home : AppRouter.login,
+      );
     });
   }
 
