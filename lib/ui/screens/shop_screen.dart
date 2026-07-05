@@ -173,7 +173,7 @@ class _ShopScreenState extends State<ShopScreen> {
       body: Stack(
         children: [
           Positioned(
-            top: MediaQuery.of(context).padding.top + 20,
+            top: MediaQuery.of(context).padding.top + 45,
             left: 0,
             right: 0,
             child: const Center(child: BackgroundTitle(text: 'Crystal shop')),
@@ -185,7 +185,7 @@ class _ShopScreenState extends State<ShopScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(
-                      height: MediaQuery.of(context).size.width * 0.06),
+                      height: MediaQuery.of(context).size.width * 0.15),
                   // Back + cart row
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,

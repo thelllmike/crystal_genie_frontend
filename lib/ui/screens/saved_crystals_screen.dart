@@ -81,7 +81,7 @@ class _SavedCrystalsScreenState extends State<SavedCrystalsScreen> {
         children: [
           // Background title
           Positioned(
-            top: MediaQuery.of(context).padding.top + 20,
+            top: MediaQuery.of(context).padding.top + 45,
             left: 0,
             right: 0,
             child:
@@ -93,7 +93,7 @@ class _SavedCrystalsScreenState extends State<SavedCrystalsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(height: screenW * 0.1), // title overlap, like home
+                  SizedBox(height: screenW * 0.15), // title overlap, like home
 
                   // Search bar + grid toggle
                   ClipRRect(
