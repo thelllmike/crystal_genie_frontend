@@ -1,12 +1,12 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
-import '../../app_router.dart';
 import '../../core/constants/colors.dart';
 import '../../core/services/db_service.dart';
 import '../../models/crystal.dart';
-import '../widgets/bottom_nav_bar.dart';
 import '../widgets/glass.dart';
+import '../widgets/page_transitions.dart';
+import 'crystal_detail_screen.dart';
 
 /// Screen displaying a searchable crystal library with bottom navigation and a background title.
 class ExploreScreen extends StatefulWidget {
@@ -57,16 +57,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
             c.name.toLowerCase().contains(q) ||
             c.headline.toLowerCase().contains(q))
         .toList();
-  }
-
-  void _onNavTap(int idx) {
-    if (idx == 2) return;
-    if (idx == 0) {
-      Navigator.of(context)
-          .pushNamedAndRemoveUntil(AppRouter.home, (r) => false);
-    } else {
-      Navigator.of(context).pushNamed(AppRouter.takePhoto);
-    }
   }
 
   @override
@@ -212,11 +202,22 @@ class _ExploreScreenState extends State<ExploreScreen> {
                                         const SizedBox(height: 16),
                                     itemBuilder: (context, index) {
                                       final item = _visibleCrystals[index];
-                                      return _CrystalCard(
-                                        imagePath: 'assets/images/item.png',
-                                        title: item.name,
-                                        subtitle: item.headline,
-                                        description: item.description,
+                                      return GestureDetector(
+                                        onTap: () =>
+                                            Navigator.of(context).push(
+                                          SmoothPageRoute(
+                                            transition:
+                                                SmoothTransition.slide,
+                                            builder: (_) => CrystalDetailScreen(
+                                                crystalName: item.name),
+                                          ),
+                                        ),
+                                        child: _CrystalCard(
+                                          imagePath: 'assets/images/item.png',
+                                          title: item.name,
+                                          subtitle: item.headline,
+                                          description: item.description,
+                                        ),
                                       );
                                     },
                                   ),
@@ -225,16 +226,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
               ),
             ),
           ),
-          // Bottom navigation bar
-          Positioned(
-            bottom: 16,
-            left: 16,
-            right: 16,
-            child: BottomNavBar(
-              selectedIndex: 2,
-              onTap: _onNavTap,
-            ),
-          ),
+          // The bottom navigation bar is owned by MainShell.
         ],
       ),
     );

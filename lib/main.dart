@@ -27,7 +27,7 @@ class CrystalGenieApp extends StatelessWidget {
         scaffoldBackgroundColor: AppColors.primaryBg,
       ),
       initialRoute: AppRouter.splash,
-      routes: AppRouter.routes,
+      onGenerateRoute: AppRouter.onGenerateRoute,
       debugShowCheckedModeBanner: false,
     );
   }
