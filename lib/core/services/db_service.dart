@@ -12,12 +12,26 @@ class DbService {
 
   // ---------- Crystal library ----------
 
+  /// Every crystal in the library, in name order.
+  ///
+  /// PostgREST caps how many rows one request may return (1000 by default), so
+  /// this pages until the server runs out instead of silently truncating the
+  /// library once the catalog grows past the cap.
   static Future<List<Crystal>> fetchCrystals() async {
-    final rows = await _client
-        .from('crystals')
-        .select('name, headline, description, star_sign, chakras')
-        .order('name', ascending: true);
-    return rows.map(Crystal.fromJson).toList();
+    const pageSize = 1000;
+    final all = <Crystal>[];
+    var from = 0;
+    while (true) {
+      final rows = await _client
+          .from('crystals')
+          .select('name, headline, description, star_sign, chakras')
+          .order('name', ascending: true)
+          .range(from, from + pageSize - 1);
+      if (rows.isEmpty) break;
+      all.addAll(rows.map(Crystal.fromJson));
+      from += rows.length;
+    }
+    return all;
   }
 
   /// Full details for one crystal by name (case-insensitive). Null if missing.
