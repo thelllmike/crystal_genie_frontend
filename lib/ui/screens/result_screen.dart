@@ -5,12 +5,12 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 
-import '../../app_router.dart';
 import '../../core/constants/colors.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/db_service.dart';
 import '../../models/detection.dart';
 import '../widgets/bottom_nav_bar.dart';
+import 'main_shell.dart';
 
 class ResultScreen extends StatefulWidget {
   final File imageFile;
@@ -60,14 +60,11 @@ class _ResultScreenState extends State<ResultScreen> {
   }
 
   void _onNavTap(int idx) {
-    if (idx == 0) {
-      Navigator.of(context)
-          .pushNamedAndRemoveUntil(AppRouter.home, (r) => false);
-    } else if (idx == 1) {
-      Navigator.of(context).pop(); // back to camera
-    } else {
-      Navigator.of(context).pushNamed(AppRouter.explore);
+    if (idx == 1) {
+      Navigator.of(context).pop(); // back to the camera tab underneath
+      return;
     }
+    MainShell.goToTab(context, idx);
   }
 
   @override

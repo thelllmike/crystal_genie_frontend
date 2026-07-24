@@ -5,9 +5,10 @@ import '../../app_router.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/db_service.dart';
 import '../../models/find.dart';
-import '../widgets/bottom_nav_bar.dart';
 import '../widgets/find_card.dart';
 import '../widgets/glass.dart';
+import '../widgets/page_transitions.dart';
+import 'crystal_detail_screen.dart';
 
 /// Home screen displaying recent crystal finds with responsive layout.
 class HomeScreen extends StatefulWidget {
@@ -24,13 +25,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _finds = DbService.recentFinds();
-  }
-
-  void _onNavTap(int idx) {
-    if (idx == 0) return;
-    Navigator.of(context).pushNamed(
-      idx == 1 ? AppRouter.takePhoto : AppRouter.explore,
-    );
   }
 
   @override
@@ -180,6 +174,14 @@ class _HomeScreenState extends State<HomeScreen> {
                               title: f.crystalName,
                               subtitle: f.headline,
                               timeAgo: f.timeAgo,
+                              onLearnMore: () => Navigator.of(context).push(
+                                SmoothPageRoute(
+                                  transition: SmoothTransition.slide,
+                                  builder: (_) => CrystalDetailScreen(
+                                    crystalName: f.crystalName,
+                                  ),
+                                ),
+                              ),
                             );
                           },
                         );
@@ -190,16 +192,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // Floating bottom nav bar
-            Positioned(
-              bottom: padding,
-              left: padding,
-              right: padding,
-              child: BottomNavBar(
-                selectedIndex: 0,
-                onTap: _onNavTap,
-              ),
-            ),
+            // The floating bottom nav bar is owned by MainShell.
           ],
         ),
       ),

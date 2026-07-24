@@ -20,6 +20,17 @@ class DbService {
     return rows.map(Crystal.fromJson).toList();
   }
 
+  /// Full details for one crystal by name (case-insensitive). Null if missing.
+  static Future<Crystal?> fetchCrystalByName(String name) async {
+    final row = await _client
+        .from('crystals')
+        .select('name, headline, description, star_sign, chakras')
+        .ilike('name', name.trim())
+        .limit(1)
+        .maybeSingle();
+    return row == null ? null : Crystal.fromJson(row);
+  }
+
   // ---------- Finds (detection history) ----------
 
   static Future<void> addFind({

@@ -11,8 +11,9 @@ import 'package:path/path.dart' as p;
 import '../../models/detection.dart';
 
 class ApiService {
-  // your real-device IP & port:
-  static const _baseUrl = 'http://192.168.1.103:8000';
+  // USB-connected device: `adb reverse tcp:8000 tcp:8000` tunnels this to the
+  // dev machine. For Wi-Fi instead, swap in your LAN IP (ipconfig getifaddr en0).
+  static const _baseUrl = 'http://localhost:8000';
 
   Future<List<Detection>> detectCrystal(String filePath) async {
     final uri = Uri.parse('$_baseUrl/detect');

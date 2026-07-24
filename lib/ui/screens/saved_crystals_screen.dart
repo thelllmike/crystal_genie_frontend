@@ -1,12 +1,14 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
-import '../../app_router.dart';
 import '../../core/constants/colors.dart';
 import '../../core/services/db_service.dart';
 import '../../models/find.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../widgets/glass.dart';
+import '../widgets/page_transitions.dart';
+import 'crystal_detail_screen.dart';
+import 'main_shell.dart';
 
 /// Screen showing user's saved crystals with tabs for "My finds" and "Favorites".
 class SavedCrystalsScreen extends StatefulWidget {
@@ -60,14 +62,7 @@ class _SavedCrystalsScreenState extends State<SavedCrystalsScreen> {
   }
 
   void _onNavTap(int idx) {
-    if (idx == 0) {
-      Navigator.of(context)
-          .pushNamedAndRemoveUntil(AppRouter.home, (r) => false);
-    } else if (idx == 1) {
-      Navigator.of(context).pushNamed(AppRouter.takePhoto);
-    } else {
-      Navigator.of(context).pushNamed(AppRouter.explore);
-    }
+    MainShell.goToTab(context, idx);
   }
 
   @override
@@ -264,6 +259,13 @@ class _SavedCrystalsScreenState extends State<SavedCrystalsScreen> {
                                     description: item.headline.isNotEmpty
                                         ? item.headline
                                         : item.timeAgo,
+                                    onLearnMore: () => Navigator.of(context).push(
+                                      SmoothPageRoute(
+                                        transition: SmoothTransition.slide,
+                                        builder: (_) => CrystalDetailScreen(
+                                            crystalName: item.crystalName),
+                                      ),
+                                    ),
                                   );
                                 },
                               ),
@@ -294,11 +296,13 @@ class _SavedCard extends StatelessWidget {
   final String imagePath;
   final String title;
   final String description;
+  final VoidCallback onLearnMore;
 
   const _SavedCard({
     required this.imagePath,
     required this.title,
     required this.description,
+    required this.onLearnMore,
   });
 
   @override
@@ -393,34 +397,40 @@ class _SavedCard extends StatelessWidget {
                         const SizedBox(width: 8),
                         // learn more button
                         Expanded(
-                          child: Container(
-                            height: 36,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                begin: Alignment.centerLeft,
-                                end: Alignment.centerRight,
-                                colors: [Color(0xFF34A0A4), Color(0xFF50B2C8)],
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: const Color(0xFF98CBCC), width: 1),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
-                                Text(
-                                  'Learn more',
-                                  style: TextStyle(
-                                    fontFamily: 'Montserrat',
-                                    fontWeight: FontWeight.w400,
-                                    fontSize: 16,
-                                    height: 1.0,
-                                    color: Colors.white,
-                                  ),
+                          child: GestureDetector(
+                            onTap: onLearnMore,
+                            child: Container(
+                              height: 36,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  begin: Alignment.centerLeft,
+                                  end: Alignment.centerRight,
+                                  colors: [Color(0xFF34A0A4), Color(0xFF50B2C8)],
                                 ),
-                                SizedBox(width: 4),
-                                Icon(HugeIcons.strokeRoundedArrowRight01, size: 20),
-                              ],
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                    color: const Color(0xFF98CBCC), width: 1),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: const [
+                                  Text(
+                                    'Learn more',
+                                    style: TextStyle(
+                                      fontFamily: 'Montserrat',
+                                      fontWeight: FontWeight.w400,
+                                      fontSize: 16,
+                                      height: 1.0,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  SizedBox(width: 4),
+                                  Icon(HugeIcons.strokeRoundedArrowRight01,
+                                      size: 20),
+                                ],
+                              ),
                             ),
                           ),
                         ),
