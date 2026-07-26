@@ -80,6 +80,36 @@ class AuthService {
     await _client.auth.updateUser(UserAttributes(password: newPassword));
   }
 
+  // ---------- Saved shipping address (stored in user metadata) ----------
+
+  static Map<String, dynamic> get _meta => currentUser?.userMetadata ?? {};
+
+  static String get shipName => (_meta['ship_name'] as String?) ?? '';
+  static String get shipPhone => (_meta['ship_phone'] as String?) ?? '';
+  static String get shipAddress => (_meta['ship_address'] as String?) ?? '';
+  static String get shipCity => (_meta['ship_city'] as String?) ?? '';
+  static String get shipPostal => (_meta['ship_postal'] as String?) ?? '';
+
+  static bool get hasSavedAddress => shipAddress.isNotEmpty;
+
+  /// Persists the shipping address to the user's metadata so checkout can
+  /// prefill it next time. Merges with existing metadata (name, etc.).
+  static Future<void> saveShippingAddress({
+    required String name,
+    required String phone,
+    required String address,
+    required String city,
+    required String postal,
+  }) async {
+    await _client.auth.updateUser(UserAttributes(data: {
+      'ship_name': name,
+      'ship_phone': phone,
+      'ship_address': address,
+      'ship_city': city,
+      'ship_postal': postal,
+    }));
+  }
+
   static bool get notificationsEnabled =>
       (currentUser?.userMetadata?['notifications_enabled'] as bool?) ?? true;
 

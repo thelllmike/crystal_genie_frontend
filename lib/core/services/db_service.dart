@@ -172,10 +172,22 @@ class DbService {
     await _client.from('cart_items').delete().eq('id', cartItemId);
   }
 
-  /// Turns the cart into an order atomically (Postgres function) and
-  /// returns the new order id.
-  static Future<int> placeOrder() async {
-    final res = await _client.rpc('place_order');
+  /// Turns the cart into an order atomically (Postgres function), storing the
+  /// shipping details, and returns the new order id.
+  static Future<int> placeOrder({
+    String name = '',
+    String phone = '',
+    String address = '',
+    String city = '',
+    String postal = '',
+  }) async {
+    final res = await _client.rpc('place_order', params: {
+      'ship_name': name,
+      'ship_phone': phone,
+      'ship_address': address,
+      'ship_city': city,
+      'ship_postal': postal,
+    });
     return (res as num).toInt();
   }
 }

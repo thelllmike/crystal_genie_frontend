@@ -5,6 +5,8 @@ import '../../core/constants/colors.dart';
 import '../../core/services/db_service.dart';
 import '../../models/cart_item.dart';
 import '../widgets/glass.dart';
+import '../widgets/page_transitions.dart';
+import 'checkout_details_screen.dart';
 
 /// Shopping cart with checkout (creates an order in Supabase).
 class CartScreen extends StatefulWidget {
@@ -17,7 +19,6 @@ class CartScreen extends StatefulWidget {
 class _CartScreenState extends State<CartScreen> {
   List<CartItem> _items = [];
   bool _loading = true;
-  bool _checkingOut = false;
 
   @override
   void initState() {
@@ -66,34 +67,32 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   Future<void> _checkout() async {
-    setState(() => _checkingOut = true);
-    try {
-      final orderId = await DbService.placeOrder();
-      if (!mounted) return;
-      setState(() => _items = []);
-      await showDialog<void>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Order placed!'),
-          content: Text(
-              'Order #$orderId has been created. We\'ll be in touch about payment and delivery.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
-      if (mounted) Navigator.of(context).pop();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Checkout failed: $e')),
-      );
-    } finally {
-      if (mounted) setState(() => _checkingOut = false);
-    }
+    // Go to the shipping-details screen; it collects the address, runs the
+    // Stripe payment, and returns the new order id on success.
+    final orderId = await Navigator.of(context).push<int>(
+      SmoothPageRoute(
+        transition: SmoothTransition.slide,
+        builder: (_) => CheckoutDetailsScreen(items: _items, total: _total),
+      ),
+    );
+    if (orderId == null || !mounted) return;
+
+    setState(() => _items = []);
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Payment received!'),
+        content: Text(
+            'Order #$orderId is confirmed. We\'ll be in touch about delivery.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+    if (mounted) Navigator.of(context).pop();
   }
 
   @override
@@ -189,7 +188,6 @@ class _CartScreenState extends State<CartScreen> {
                       width: 160,
                       child: GradientButton(
                         label: 'Checkout',
-                        loading: _checkingOut,
                         onPressed: _checkout,
                       ),
                     ),
