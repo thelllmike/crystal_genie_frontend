@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 
 import '../../core/constants/colors.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/db_service.dart';
+import '../../core/services/order_email_service.dart';
 import '../../core/services/payment_service.dart';
 import '../../models/cart_item.dart';
 import '../widgets/glass.dart';
@@ -90,7 +93,11 @@ class _CheckoutDetailsScreenState extends State<CheckoutDetailsScreen> {
         postal: _postal.text.trim(),
       );
 
-      // 3. Optionally remember the address for next time (best effort).
+      // 3. Email the confirmation from the shop's admin mailbox. Best effort —
+      // the order is already placed, so a mail failure must not fail checkout.
+      unawaited(OrderEmailService.sendConfirmation(orderId));
+
+      // 4. Optionally remember the address for next time (best effort).
       if (_saveAddress) {
         try {
           await AuthService.saveShippingAddress(
