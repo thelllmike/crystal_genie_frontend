@@ -10,8 +10,10 @@ import '../../core/constants/colors.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/db_service.dart';
+import '../../core/services/subscription_service.dart';
 import '../widgets/page_transitions.dart';
 import 'main_shell.dart';
+import 'paywall_screen.dart';
 import 'result_screen.dart';
 
 class TakePhotoScreen extends StatefulWidget {
@@ -100,7 +102,20 @@ class _TakePhotoScreenState extends State<TakePhotoScreen> {
     await _restartController();
   }
 
+  /// Scanning is the premium feature: free for the trial week, then it needs a
+  /// subscription. Shows the paywall and returns true if the user came back
+  /// with access.
+  Future<bool> _ensureAccess() async {
+    if (await SubscriptionService.hasAccess()) return true;
+    if (!mounted) return false;
+    await Navigator.of(context).push(
+      SmoothPageRoute<bool>(builder: (_) => const PaywallScreen()),
+    );
+    return SubscriptionService.current?.hasAccess ?? false;
+  }
+
   Future<void> _pickFromGallery() async {
+    if (!await _ensureAccess()) return;
     final file = await _picker.pickImage(source: ImageSource.gallery);
     if (file != null) {
       setState(() => _pickedImage = file);
@@ -109,6 +124,7 @@ class _TakePhotoScreenState extends State<TakePhotoScreen> {
   }
 
   Future<void> _takePhoto() async {
+    if (!await _ensureAccess()) return;
     if (_controller?.value.isInitialized ?? false) {
       final photo = await _controller!.takePicture();
       setState(() => _pickedImage = photo);

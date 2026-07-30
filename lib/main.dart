@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app_router.dart';
 import 'core/constants/colors.dart';
+import 'core/constants/stripe_config.dart';
 import 'core/constants/supabase_config.dart';
 
 Future<void> main() async {
@@ -11,6 +13,19 @@ Future<void> main() async {
     url: SupabaseConfig.url,
     anonKey: SupabaseConfig.anonKey,
   );
+  // Configure Stripe, but never let a bad/placeholder key blank the whole app.
+  // Payment will error clearly at checkout instead of crashing at startup.
+  final key = StripeConfig.publishableKey;
+  if (key.startsWith('pk_') && !key.contains('REPLACE')) {
+    try {
+      Stripe.publishableKey = key;
+      await Stripe.instance.applySettings();
+    } catch (e, s) {
+      debugPrint('Stripe init failed: $e\n$s');
+    }
+  } else {
+    debugPrint('Stripe not configured: set a real key in StripeConfig.');
+  }
   runApp(const CrystalGenieApp());
 }
 

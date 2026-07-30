@@ -47,3 +47,9 @@ app.*.map.json
 
 # Backend virtualenv
 /backend/.venv/
+
+# Environment files with real secrets — never commit these.
+# The .env.example templates stay tracked (they must not contain real keys).
+.env
+.env.*
+!.env.example

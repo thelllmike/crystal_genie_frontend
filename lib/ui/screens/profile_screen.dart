@@ -4,7 +4,9 @@ import 'package:hugeicons/hugeicons.dart';
 import '../../app_router.dart';
 import '../../core/constants/colors.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/services/subscription_service.dart';
 import '../widgets/glass.dart';
+import 'paywall_screen.dart';
 
 /// Profile screen with blurred background elements and action cards.
 class ProfileScreen extends StatefulWidget {
@@ -16,6 +18,13 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _notifications = AuthService.notificationsEnabled;
+
+  @override
+  void initState() {
+    super.initState();
+    // Pick up a renewal or lapse that happened since the app was opened.
+    SubscriptionService.refresh();
+  }
 
   void _snack(String message) {
     if (!mounted) return;
@@ -169,8 +178,141 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _logout() async {
     await AuthService.signOut();
+    SubscriptionService.clear(); // don't leak access to the next account
     if (!mounted) return;
     Navigator.of(context).pushNamedAndRemoveUntil(AppRouter.login, (_) => false);
+  }
+
+  Future<void> _openPaywall() async {
+    await Navigator.of(context)
+        .push(MaterialPageRoute<bool>(builder: (_) => const PaywallScreen()));
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _cancelSubscription() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cancel subscription?'),
+        content: const Text(
+          'You\'ll keep scanning until the end of the period you\'ve paid for.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Keep it'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Cancel subscription'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await SubscriptionService.cancel();
+      if (mounted) setState(() {});
+      _snack('Subscription canceled');
+    } catch (e) {
+      _snack('Could not cancel: $e');
+    }
+  }
+
+  /// Trial countdown / subscription state, with the matching action.
+  Widget _subscriptionCard() {
+    return ValueListenableBuilder<SubscriptionStatus?>(
+      valueListenable: SubscriptionService.notifier,
+      builder: (context, status, _) {
+        if (status == null) return const SizedBox.shrink();
+
+        final String title;
+        final String subtitle;
+        if (status.isSubscribed) {
+          title = 'Premium';
+          final end = status.currentPeriodEnd;
+          final when = end == null
+              ? ''
+              : ' ${end.day}/${end.month}/${end.year}';
+          subtitle = status.cancelAtPeriodEnd
+              ? 'Ends$when'
+              : 'Renews$when for ${status.priceLabel}';
+        } else if (status.isTrialActive) {
+          title = 'Free trial';
+          final d = status.trialDaysLeft;
+          subtitle = '$d ${d == 1 ? 'day' : 'days'} left · '
+              'then ${status.priceLabel}';
+        } else {
+          title = 'Trial ended';
+          subtitle = 'Subscribe for ${status.priceLabel} to keep scanning';
+        }
+
+        return Padding(
+          padding: const EdgeInsets.only(top: 16),
+          child: GlassCard(
+            width: double.infinity,
+            child: Row(
+              children: [
+                const Icon(HugeIcons.strokeRoundedSparkles,
+                    size: 24, color: AppColors.primary),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontFamily: 'Montserrat',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          color: Color(0xFF1A181B),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                          fontFamily: 'Montserrat',
+                          fontWeight: FontWeight.w300,
+                          fontSize: 13,
+                          color: Color(0xFF7A9596),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (status.isSubscribed && !status.cancelAtPeriodEnd)
+                  TextButton(
+                    onPressed: _cancelSubscription,
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(
+                        fontFamily: 'Montserrat',
+                        fontSize: 14,
+                        color: Color(0xFF7A9596),
+                      ),
+                    ),
+                  )
+                else if (!status.isSubscribed)
+                  TextButton(
+                    onPressed: _openPaywall,
+                    child: const Text(
+                      'Upgrade',
+                      style: TextStyle(
+                        fontFamily: 'Montserrat',
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: Color(0xFF34A0A4),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -302,6 +444,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ],
                           ),
                         ),
+
+                        // Trial / subscription status
+                        _subscriptionCard(),
 
                         const SizedBox(height: 16),
 

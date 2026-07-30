@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/services/subscription_service.dart';
 import '../widgets/bottom_nav_bar.dart';
 import 'TakePhotoScreen.dart';
 import 'explore_screen.dart';
@@ -39,6 +40,8 @@ class _MainShellState extends State<MainShell> {
     super.initState();
     MainShell.selectedTab.value = widget.initialIndex;
     MainShell.selectedTab.addListener(_onTabChanged);
+    // Warm the trial/subscription status so the camera tab can gate instantly.
+    SubscriptionService.refresh();
   }
 
   @override
