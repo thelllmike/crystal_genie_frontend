@@ -77,21 +77,25 @@ class _MainShellState extends State<MainShell> {
               ],
             ),
           ),
-          Positioned(
-            left: 16,
-            right: 16,
-            bottom: 0,
-            child: SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: BottomNavBar(
-                  selectedIndex: index,
-                  onTap: (i) => MainShell.selectedTab.value = i,
+          // The camera tab has its own bottom control pill and hides the shell
+          // nav entirely — two stacked bars collide and the top one wins. Its
+          // back arrow returns to the Home tab.
+          if (index != MainShell.cameraTab)
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: 0,
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: BottomNavBar(
+                    selectedIndex: index,
+                    onTap: (i) => MainShell.selectedTab.value = i,
+                  ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );

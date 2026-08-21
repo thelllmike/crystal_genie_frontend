@@ -47,6 +47,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: ^0.14.1
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -96,3 +97,18 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# App launcher icons. Regenerate after changing assets/icon/*:
+#   dart run flutter_launcher_icons
+flutter_launcher_icons:
+  image_path: "assets/icon/app_icon.png"
+  android: true
+  ios: true
+  # iOS rejects icons with an alpha channel; app_icon.png is already opaque
+  # but this guards against a future source with transparency.
+  remove_alpha_ios: true
+  adaptive_icon_background: "assets/icon/adaptive_bg.png"
+  adaptive_icon_foreground: "assets/icon/adaptive_fg.png"
+  web:
+    generate: true
+    image_path: "assets/icon/app_icon.png"

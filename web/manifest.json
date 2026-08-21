@@ -1,6 +1,6 @@
 {
-    "name": "crystal_genie",
-    "short_name": "crystal_genie",
+    "name": "Crystal Genie",
+    "short_name": "Crystal Genie",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

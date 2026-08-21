@@ -220,7 +220,9 @@ class _TakePhotoScreenState extends State<TakePhotoScreen> {
                 .clamp(0.0, constraints.maxHeight * 0.6);
 
             return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              // MainShell hides its nav bar on this tab, so the control pill
+              // below is the only bottom bar and sits flush above the safe area.
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
               child: Column(
                 children: [
                   SizedBox(height: constraints.maxHeight * 0.06),
