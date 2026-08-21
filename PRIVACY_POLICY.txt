@@ -1,0 +1,254 @@
+PRIVACY POLICY FOR CRYSTAL GENIE
+
+Last updated: 13 August 2026
+Effective date: 13 August 2026
+
+Crystal Genie ("the App", "we", "us", "our") is a mobile application that
+identifies crystals from photographs and sells crystals and related products.
+This Privacy Policy explains what information we collect, why we collect it,
+who we share it with, and the choices you have.
+
+App name:        Crystal Genie
+Package name:    com.crystalgenie.app
+Developer:       [YOUR LEGAL NAME OR COMPANY NAME]
+Address:         [YOUR BUSINESS ADDRESS]
+Contact email:   admin@crystalgenie.com
+
+By creating an account or using the App, you agree to this Policy.
+
+
+--------------------------------------------------------------------------
+1. INFORMATION WE COLLECT
+--------------------------------------------------------------------------
+
+1.1 Account information
+
+When you sign up with an email address and password, we collect:
+
+  - Your name
+  - Your email address
+  - Your password (stored only as a salted hash by our authentication
+    provider; we never see or store your password in readable form)
+
+If you choose to sign in with Google or Apple instead, we receive your name
+and email address from that provider. We do not receive your Google or Apple
+password.
+
+1.2 Photographs and camera access
+
+The core feature of the App is crystal identification. To use it you may
+take a photo with your device camera or select an existing photo from your
+device gallery. The App requests camera and photo library permission only
+for this purpose, and only at the moment you use the feature.
+
+The selected image is uploaded over an encrypted HTTPS connection to our
+server, where a machine-learning model analyses it and returns the likely
+crystal name and related information.
+
+We do not store your photographs. Images are held in server memory only for
+the seconds needed to run the analysis and are then discarded. They are not
+saved to disk, not added to any database, not used to train our model, and
+not shared with anyone.
+
+What we do keep is an anonymous record of each identification result: the
+name of the crystal detected and the model's confidence score. This record
+is not linked to your account, your device, or your image, and is used only
+to understand which crystals are commonly scanned.
+
+1.3 Order and shipping information
+
+If you buy a product through the App, you provide:
+
+  - Recipient name
+  - Phone number
+  - Street address, city, and postal code
+
+We use this solely to process, package, and deliver your order and to
+respond to questions about it. If you tick the option to remember your
+address, it is saved to your account so that you do not have to type it
+again; you may change or clear it at any time from the checkout screen.
+
+1.4 Payment information
+
+Payments are processed by Stripe, Inc. Card details are entered into
+Stripe's own secure payment sheet and are sent directly to Stripe. We never
+receive, see, or store your full card number, expiry date, or security code.
+
+From Stripe we receive only what we need to fulfil your order and manage
+your subscription: whether the payment succeeded, the amount, the currency,
+the last four digits and card brand, and a Stripe customer or subscription
+identifier.
+
+1.5 Subscription information
+
+The App offers a free trial followed by an optional paid subscription
+(currently USD 3.69 per month) which unlocks crystal scanning. We store your
+subscription status, trial end date, current billing period end date, and
+whether you have requested cancellation. This status is reported to us by
+Stripe.
+
+1.6 App activity
+
+We store items you add to your cart, your saved or favourited crystals, and
+your order history, so that these are available to you across sessions and
+devices.
+
+1.7 Information we do NOT collect
+
+  - We do not collect your precise or approximate location.
+  - We do not collect your contacts, calendar, SMS, or call logs.
+  - We do not use advertising identifiers and we do not serve ads.
+  - We do not use third-party analytics or advertising SDKs.
+  - We do not track you across other apps or websites.
+  - We do not knowingly collect information from children (see section 8).
+
+
+--------------------------------------------------------------------------
+2. HOW WE USE YOUR INFORMATION
+--------------------------------------------------------------------------
+
+We use the information described above only to:
+
+  - Create and secure your account and sign you in
+  - Identify crystals from the photos you submit
+  - Take payment and manage your free trial and subscription
+  - Process, ship, and support your orders
+  - Send you an order confirmation email after a purchase
+  - Send essential service messages, such as email address confirmation and
+    password reset
+  - Keep the App working correctly and diagnose technical problems
+  - Comply with tax, accounting, and other legal obligations
+
+We do not sell your personal information. We do not share it with third
+parties for their own marketing or advertising.
+
+
+--------------------------------------------------------------------------
+3. SERVICE PROVIDERS WE SHARE DATA WITH
+--------------------------------------------------------------------------
+
+We use a small number of processors, each of which receives only the data
+needed for its function:
+
+  Supabase (authentication and database)
+  Stores your account record, cart, saved crystals, orders, and shipping
+  address. Privacy policy: https://supabase.com/privacy
+
+  Stripe (payments and subscriptions)
+  Processes card payments and recurring billing. Receives your payment
+  details directly and your email address for receipts.
+  Privacy policy: https://stripe.com/privacy
+
+  Google Sign-In / Apple Sign In (optional login)
+  Used only if you choose these sign-in methods. They confirm your identity
+  to us and provide your name and email address.
+  https://policies.google.com/privacy
+  https://www.apple.com/legal/privacy/
+
+  Email delivery
+  Order confirmation and account emails are sent from our own mail server
+  (admin@crystalgenie.com) over an encrypted SMTP connection.
+
+We may also disclose information where we are legally required to do so, for
+example in response to a valid legal request, or where necessary to protect
+our rights, safety, or property, or to prevent fraud.
+
+
+--------------------------------------------------------------------------
+4. DATA SECURITY
+--------------------------------------------------------------------------
+
+All communication between the App and our servers uses HTTPS (TLS)
+encryption. Passwords are stored only as salted hashes. Access to your
+account data is protected by row-level security rules, so one user cannot
+read another user's data. Card data is handled entirely by Stripe, a
+PCI-DSS Level 1 certified provider.
+
+No method of transmission or storage is completely secure. While we take
+reasonable measures to protect your information, we cannot guarantee
+absolute security.
+
+
+--------------------------------------------------------------------------
+5. HOW LONG WE KEEP YOUR DATA
+--------------------------------------------------------------------------
+
+  - Photographs: not retained. Discarded immediately after analysis.
+  - Anonymous detection records: retained indefinitely; contain no personal
+    data.
+  - Account data (name, email, saved crystals, cart, shipping address):
+    retained while your account is open, and deleted when you delete your
+    account.
+  - Order and payment records: retained for as long as required by tax and
+    accounting law (typically up to 7 years), even after account deletion.
+
+
+--------------------------------------------------------------------------
+6. YOUR RIGHTS AND CHOICES
+--------------------------------------------------------------------------
+
+Depending on where you live, you may have the right to access, correct,
+export, restrict the processing of, or delete your personal information, and
+to withdraw consent or object to certain processing. To exercise any of
+these rights, email admin@crystalgenie.com and we will respond within 30
+days.
+
+Account deletion
+You may delete your account and its associated personal data at any time by
+emailing admin@crystalgenie.com from your registered email address, or by
+using the delete-account option in the App's profile screen where available.
+Deletion removes your name, email, saved crystals, cart, and stored shipping
+address. Order and payment records are retained where the law requires, as
+described in section 5.
+
+Permissions
+You can revoke camera and photo library access at any time in your device
+settings. Crystal identification will not work without it, but the rest of
+the App will continue to function.
+
+Marketing
+We do not send promotional email. Transactional email (order confirmations,
+password resets) is a necessary part of the service.
+
+
+--------------------------------------------------------------------------
+7. INTERNATIONAL TRANSFERS
+--------------------------------------------------------------------------
+
+Our service providers may process and store data on servers outside your
+country of residence, including in the United States and the European Union.
+Where required, these transfers are covered by appropriate safeguards such
+as the European Commission's Standard Contractual Clauses.
+
+
+--------------------------------------------------------------------------
+8. CHILDREN'S PRIVACY
+--------------------------------------------------------------------------
+
+Crystal Genie is not directed at children under 13 and we do not knowingly
+collect personal information from them. If you believe a child has provided
+us with personal information, contact admin@crystalgenie.com and we will
+delete it promptly.
+
+
+--------------------------------------------------------------------------
+9. CHANGES TO THIS POLICY
+--------------------------------------------------------------------------
+
+We may update this Policy from time to time. The "Last updated" date at the
+top will change, and material changes will be announced in the App or by
+email. Continued use of the App after an update means you accept the revised
+Policy.
+
+
+--------------------------------------------------------------------------
+10. CONTACT US
+--------------------------------------------------------------------------
+
+Questions, requests, or complaints about this Policy or your data:
+
+  Email:   admin@crystalgenie.com
+  Postal:  [YOUR BUSINESS ADDRESS]
+
+If you are in the EEA or UK and are not satisfied with our response, you may
+lodge a complaint with your local data protection authority.
