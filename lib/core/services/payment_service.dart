@@ -5,6 +5,7 @@ import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../constants/api_config.dart';
 import '../constants/stripe_config.dart';
 
 /// Card payments via Stripe's native payment sheet.
@@ -13,9 +14,7 @@ import '../constants/stripe_config.dart';
 /// signed-in user's cart, creates the PaymentIntent, and returns only its
 /// client secret.
 class PaymentService {
-  // Same host as [ApiService]: the FastAPI backend. On a USB device,
-  // `adb reverse tcp:8000 tcp:8000` tunnels this to the dev machine.
-  static const _baseUrl = 'http://localhost:8000';
+  static const _baseUrl = ApiConfig.baseUrl;
 
   /// Charges the current cart. Returns `true` on a completed payment and
   /// `false` if the user dismissed the sheet. Throws on any real failure.

@@ -1,0 +1,166 @@
+GOOGLE PLAY STORE LISTING — CRYSTAL GENIE
+Copy each block into the matching field in Play Console
+(Grow users > Store presence > Store listings)
+
+
+==========================================================================
+APP NAME  (30 characters max)
+==========================================================================
+
+Crystal Genie – Crystal ID
+
+[26 / 30 characters]
+
+Alternatives if you prefer:
+  Crystal Genie: Stone Scanner      (30 / 30)
+  Crystal Genie – Rock & Gem ID     (29 / 30)
+  Crystal Genie                     (13 / 30)
+
+Note: "crystalgenie" as one lowercase word is currently in the field. Adding
+the "Crystal ID" keyword helps people find you when they search for a crystal
+identifier, which is the main way this kind of app gets discovered.
+
+
+==========================================================================
+SHORT DESCRIPTION  (80 characters max)
+==========================================================================
+
+Identify crystals instantly with your camera, then shop authentic stones.
+
+[73 / 80 characters]
+
+Alternatives:
+  Point your camera at any crystal and know exactly what it is in seconds.
+  [72 / 80]
+
+  Crystal identifier and shop. Scan a stone, learn its story, order more.
+  [71 / 80]
+
+
+==========================================================================
+FULL DESCRIPTION  (4000 characters max)
+==========================================================================
+
+Ever picked up a beautiful stone and wondered what it actually is? Crystal
+Genie tells you in seconds. Point your camera at any crystal, take a photo,
+and our AI identifies it instantly — then tells you everything worth knowing
+about it.
+
+IDENTIFY ANY CRYSTAL FROM A PHOTO
+
+Snap a new photo or choose one from your gallery. Crystal Genie's
+image-recognition model analyses the stone's colour, form, and surface and
+returns the most likely match along with a confidence score, so you always
+know how certain the result is.
+
+Works on raw specimens, polished tumbles, clusters, points, spheres, and
+jewellery pieces.
+
+LEARN THE STORY BEHIND EVERY STONE
+
+Each identification opens a full profile of the crystal:
+
+• What it is and where it comes from
+• Its traditional meaning and symbolism
+• The chakras it is traditionally associated with
+• The zodiac and star signs it is linked to in crystal lore
+• How collectors typically care for and cleanse it
+
+BUILD YOUR COLLECTION
+
+Save any crystal you identify to your personal collection. Your saved stones
+sync to your account, so your collection follows you to any device you sign
+in on. Browse back through everything you have discovered, any time.
+
+EXPLORE AND DISCOVER
+
+Not sure what you are looking for? Browse the full crystal library to explore
+stones by name, meaning, and association — a genuine reference for anyone
+building knowledge alongside a collection.
+
+SHOP AUTHENTIC CRYSTALS
+
+Found a stone you love? Order it. Crystal Genie includes a built-in shop of
+hand-picked crystals and specimens, with a simple cart, secure card checkout
+powered by Stripe, and an emailed order confirmation with every purchase.
+Save your shipping address once and reorder in a couple of taps.
+
+WHY CRYSTAL GENIE
+
+• Instant results — identification takes seconds, not minutes
+• Confidence scores, so you can judge every result for yourself
+• No ads, anywhere in the app
+• Your photos are never stored — images are analysed and immediately
+  discarded
+• Sign in with email, Google, or Apple
+• Clean, calm interface designed to stay out of your way
+
+FREE TRIAL, THEN A SIMPLE SUBSCRIPTION
+
+Start with a free trial to try crystal identification with no commitment.
+After the trial, Crystal Genie Premium unlocks unlimited scanning for
+USD 3.69 per month. Your subscription renews automatically and can be
+cancelled any time from inside the app or from your Google Play account
+settings; cancelling stops future charges and you keep access until the end
+of the period you have paid for.
+
+Browsing the crystal library and shopping the store are always free.
+
+PRIVACY YOU CAN CHECK
+
+We do not store your photographs, we do not track you across other apps, and
+we do not show ads. Card details go straight to Stripe and are never seen by
+us. You can delete your account and its data whenever you want.
+
+Privacy policy: [PASTE YOUR PRIVACY POLICY URL HERE]
+
+WHO IT IS FOR
+
+Crystal collectors, rockhounds, gem and mineral enthusiasts, meditation and
+yoga practitioners, tarot and astrology readers, market and crystal-shop
+browsers, and anyone who has ever come home from a beach or a hike holding
+something they could not name.
+
+Download Crystal Genie and find out what you are holding.
+
+---
+
+Important: information about crystal meanings, chakras, and star-sign
+associations is provided for cultural, historical, and entertainment interest.
+It is not medical advice and is not intended to diagnose, treat, or cure any
+condition.
+
+[approx. 3,150 / 4000 characters]
+
+
+==========================================================================
+NOTES ON THE FIELDS BELOW THIS ONE ON THE SAME PAGE
+==========================================================================
+
+COMMON VISUAL ASSETS — all required before you can publish:
+
+  App icon         512 x 512 px, 32-bit PNG, max 1 MB, no transparency,
+                   no rounded corners (Play adds them)
+  Feature graphic  1024 x 500 px, PNG or JPEG, max 15 MB, no transparency.
+                   Keep text away from the edges — it gets cropped on some
+                   surfaces
+  Phone screenshots  Minimum 2, maximum 8. Recommend 4-6.
+                   16:9 or 9:16 aspect ratio, each side 320-3840 px.
+                   1080 x 1920 px is the safe choice.
+  Tablet screenshots  Optional, but without them your app is excluded from
+                   some tablet and Chromebook surfaces
+
+Suggested screenshot order (this order matters — most people only see the
+first two):
+  1. Camera aimed at a crystal, mid-scan
+  2. Result screen showing the identified crystal and its confidence score
+  3. Crystal detail page with meaning, chakras, star sign
+  4. Saved collection screen
+  5. Shop screen
+  6. Paywall / trial screen
+
+Add a short caption banner to each screenshot image ("Scan any crystal",
+"Know exactly what you are holding") — plain screenshots convert noticeably
+worse than captioned ones.
+
+VIDEO — optional, must be a YouTube URL, not an upload. Skip it for launch.

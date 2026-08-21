@@ -5,6 +5,7 @@ import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../constants/api_config.dart';
 import '../constants/stripe_config.dart';
 
 /// A user's trial/subscription state, as reported by the backend.
@@ -54,8 +55,7 @@ class SubscriptionStatus {
 /// Paid status is decided by Stripe and written to the database by the
 /// backend's webhook — the app only ever reads it.
 class SubscriptionService {
-  // Same host as [ApiService] and [PaymentService]: the FastAPI backend.
-  static const _baseUrl = 'http://localhost:8000';
+  static const _baseUrl = ApiConfig.baseUrl;
 
   /// Last known status. Kept so the camera tab can gate without a round trip
   /// on every shutter press.
