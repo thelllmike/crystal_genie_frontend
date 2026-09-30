@@ -263,27 +263,27 @@ class _CrystalCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Crystal image
-              Container(
-                width: 104,
-                height: 104,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: const Color(0xFFFBF5F3),
-                    width: 1,
-                  ),
-                  image: DecorationImage(
-                    image: imageUrl != null
-                        ? NetworkImage(imageUrl!)
-                        : const AssetImage('assets/images/item.png')
-                            as ImageProvider,
-                    fit: BoxFit.cover,
-                    onError: imageUrl != null ? (_, __) {} : null,
+              // Crystal photo — only when there is one to show (no
+              // placeholder picture; see FeatureFlags.showCrystalPhotos).
+              if (imageUrl != null) ...[
+                Container(
+                  width: 104,
+                  height: 104,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFFFBF5F3),
+                      width: 1,
+                    ),
+                    image: DecorationImage(
+                      image: NetworkImage(imageUrl!),
+                      fit: BoxFit.cover,
+                      onError: (_, __) {},
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
+                const SizedBox(width: 12),
+              ],
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

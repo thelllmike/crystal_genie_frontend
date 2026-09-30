@@ -80,6 +80,7 @@ class _CrystalDetailScreenState extends State<CrystalDetailScreen> {
 
     const imgH = 380.0;
     const overlap = 64.0;
+    final photo = _crystal?.imageUrl;
     final cardW = MediaQuery.of(context).size.width - 32;
 
     return Scaffold(
@@ -164,33 +165,33 @@ class _CrystalDetailScreenState extends State<CrystalDetailScreen> {
 
                         const SizedBox(height: 16),
 
-                        // Photo from the admin panel, else the placeholder
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: Container(
-                            width: cardW,
-                            height: imgH,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                  color: const Color(0x80FFFFFF), width: 2),
-                            ),
-                            child: _crystal?.imageUrl != null
-                                ? Image.network(
-                                    _crystal!.imageUrl!,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => Image.asset(
-                                        'assets/images/item.png',
-                                        fit: BoxFit.cover),
-                                  )
-                                : Image.asset('assets/images/item.png',
+                        // Photo from the admin panel — none (and no placeholder)
+                        // when there isn't one; see FeatureFlags.showCrystalPhotos.
+                        if (photo != null)
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              width: cardW,
+                              height: imgH,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                    color: const Color(0x80FFFFFF), width: 2),
+                              ),
+                              child: Image.network(
+                                photo,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Image.asset(
+                                    'assets/images/item.png',
                                     fit: BoxFit.cover),
+                              ),
+                            ),
                           ),
-                        ),
 
                         // Detail card overlapping the image
                         Transform.translate(
-                          offset: const Offset(0, -overlap),
+                          // Overlaps the photo; sits in its place without one.
+                          offset: Offset(0, photo != null ? -overlap : 0),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(16),
                             child: BackdropFilter(
