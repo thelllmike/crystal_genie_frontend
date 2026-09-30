@@ -1,8 +1,0 @@
-fastapi
-uvicorn[standard]
-python-multipart
-ultralytics
-pillow
-supabase
-python-dotenv
-stripe
