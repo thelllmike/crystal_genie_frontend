@@ -213,7 +213,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                                           ),
                                         ),
                                         child: _CrystalCard(
-                                          imagePath: 'assets/images/item.png',
+                                          imageUrl: item.imageUrl,
                                           title: item.name,
                                           subtitle: item.headline,
                                           description: item.description,
@@ -235,13 +235,13 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
 /// Card widget for each crystal entry.
 class _CrystalCard extends StatelessWidget {
-  final String imagePath;
+  final String? imageUrl;
   final String title;
   final String subtitle;
   final String description;
 
   const _CrystalCard({
-    required this.imagePath,
+    required this.imageUrl,
     required this.title,
     required this.subtitle,
     required this.description,
@@ -274,8 +274,12 @@ class _CrystalCard extends StatelessWidget {
                     width: 1,
                   ),
                   image: DecorationImage(
-                    image: AssetImage(imagePath),
+                    image: imageUrl != null
+                        ? NetworkImage(imageUrl!)
+                        : const AssetImage('assets/images/item.png')
+                            as ImageProvider,
                     fit: BoxFit.cover,
+                    onError: imageUrl != null ? (_, __) {} : null,
                   ),
                 ),
               ),

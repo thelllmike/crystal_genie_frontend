@@ -6,12 +6,16 @@ class Crystal {
   final String starSign;
   final String chakras;
 
+  /// Photo uploaded from the admin panel; null shows the placeholder.
+  final String? imageUrl;
+
   Crystal({
     required this.name,
     required this.headline,
     required this.description,
     required this.starSign,
     required this.chakras,
+    this.imageUrl,
   });
 
   factory Crystal.fromJson(Map<String, dynamic> j) => Crystal(
@@ -20,5 +24,8 @@ class Crystal {
         description: j['description'] as String? ?? '',
         starSign: j['star_sign'] as String? ?? '',
         chakras: j['chakras'] as String? ?? '',
+        imageUrl: (j['image_url'] as String?)?.trim().isEmpty ?? true
+            ? null
+            : j['image_url'] as String,
       );
 }

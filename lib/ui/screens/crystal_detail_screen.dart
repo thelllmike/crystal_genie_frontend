@@ -164,7 +164,7 @@ class _CrystalDetailScreenState extends State<CrystalDetailScreen> {
 
                         const SizedBox(height: 16),
 
-                        // Image (placeholder — crystals have no stored photo)
+                        // Photo from the admin panel, else the placeholder
                         ClipRRect(
                           borderRadius: BorderRadius.circular(16),
                           child: Container(
@@ -175,8 +175,16 @@ class _CrystalDetailScreenState extends State<CrystalDetailScreen> {
                               border: Border.all(
                                   color: const Color(0x80FFFFFF), width: 2),
                             ),
-                            child: Image.asset('assets/images/item.png',
-                                fit: BoxFit.cover),
+                            child: _crystal?.imageUrl != null
+                                ? Image.network(
+                                    _crystal!.imageUrl!,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Image.asset(
+                                        'assets/images/item.png',
+                                        fit: BoxFit.cover),
+                                  )
+                                : Image.asset('assets/images/item.png',
+                                    fit: BoxFit.cover),
                           ),
                         ),
 

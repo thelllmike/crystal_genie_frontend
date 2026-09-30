@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../models/admin.dart';
 import '../../models/cart_item.dart';
 import '../../models/crystal.dart';
 import '../../models/find.dart';
@@ -24,7 +25,9 @@ class DbService {
     while (true) {
       final rows = await _client
           .from('crystals')
-          .select('name, headline, description, star_sign, chakras')
+          // '*' rather than a column list so the app keeps working on a
+          // database that doesn't have image_url yet.
+          .select('*')
           .order('name', ascending: true)
           .range(from, from + pageSize - 1);
       if (rows.isEmpty) break;
@@ -38,7 +41,7 @@ class DbService {
   static Future<Crystal?> fetchCrystalByName(String name) async {
     final row = await _client
         .from('crystals')
-        .select('name, headline, description, star_sign, chakras')
+        .select('*')
         .ilike('name', name.trim())
         .limit(1)
         .maybeSingle();
@@ -117,8 +120,61 @@ class DbService {
     });
   }
 
+  static Future<void> updateProduct(
+    int productId, {
+    required String name,
+    required double price,
+    String headline = '',
+    int stock = 0,
+    String? imageUrl,
+  }) async {
+    await _client.from('products').update({
+      'name': name,
+      'headline': headline,
+      'price': price,
+      'stock': stock,
+      'image_url': (imageUrl == null || imageUrl.isEmpty) ? null : imageUrl,
+    }).eq('id', productId);
+  }
+
   static Future<void> deleteProduct(int productId) async {
     await _client.from('products').delete().eq('id', productId);
+  }
+
+  /// Adds a crystal, or updates the one with this exact name.
+  static Future<void> saveCrystalInfo(Crystal crystal) async {
+    await _client.from('crystals').upsert(
+      {
+        'name': crystal.name,
+        'headline': crystal.headline,
+        'description': crystal.description,
+        'star_sign': crystal.starSign,
+        'chakras': crystal.chakras,
+      },
+      onConflict: 'name',
+    );
+  }
+
+  static Future<void> deleteCrystal(String name) async {
+    await _client.from('crystals').delete().eq('name', name);
+  }
+
+  static Future<List<AdminOrder>> adminOrders() async {
+    final res = await _client.rpc('admin_orders');
+    return ((res as List?) ?? [])
+        .map((e) => AdminOrder.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  static Future<void> setOrderStatus(int orderId, String status) async {
+    await _client.from('orders').update({'status': status}).eq('id', orderId);
+  }
+
+  static Future<List<AdminSubscriber>> adminSubscribers() async {
+    final res = await _client.rpc('admin_subscribers');
+    return ((res as List?) ?? [])
+        .map((e) => AdminSubscriber.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   // ---------- Shop ----------
