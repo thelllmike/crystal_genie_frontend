@@ -12,3 +12,6 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+# ...and backups/copies of them (e.g. upload-keystore.jks.bak)
+**/*.jks.*
+**/*.keystore.*
