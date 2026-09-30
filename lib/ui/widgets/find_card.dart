@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import '../../core/constants/colors.dart';
+import '../../core/constants/feature_flags.dart';
 
 /// A reusable card for showing a crystal “find” in lists.
 class FindCard extends StatelessWidget {
@@ -42,20 +43,23 @@ class FindCard extends StatelessWidget {
             ),
             child: Row(
               children: [
-                // fixed-size image
-                Container(
-                  width: 124,
-                  height: 124,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white, width: 1),
-                    image: DecorationImage(
-                      image: AssetImage(imagePath),
-                      fit: BoxFit.cover,
+                // fixed-size image (hidden for now, see FeatureFlags)
+                if (FeatureFlags.showFindImages) ...[
+                  Container(
+                    width: 124,
+                    height: 124,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white, width: 1),
+                      image: DecorationImage(
+                        image: AssetImage(imagePath),
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
+                  const SizedBox(width: 12),
+                ] else
+                  const SizedBox(width: 8),
                 // flexible content
                 Expanded(
                   child: Padding(
