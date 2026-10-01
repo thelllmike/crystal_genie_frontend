@@ -4,7 +4,7 @@ class FeatureFlags {
   /// crystal details show no picture. Set to true to show them.
   static const bool showCrystalPhotos = false;
 
-  /// The picture on "Recent finds" cards (home screen). Off for now: the cards
-  /// show text only. Set to true to bring the picture back.
+  /// The picture on "Recent finds" (home) and "Saved crystals" cards. Off for
+  /// now: the cards show text only. Set to true to bring the picture back.
   static const bool showFindImages = false;
 }
