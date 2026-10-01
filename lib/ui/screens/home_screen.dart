@@ -9,6 +9,7 @@ import '../widgets/find_card.dart';
 import '../widgets/glass.dart';
 import '../widgets/page_transitions.dart';
 import 'crystal_detail_screen.dart';
+import 'main_shell.dart';
 
 /// Home screen displaying recent crystal finds with responsive layout.
 class HomeScreen extends StatefulWidget {
@@ -25,6 +26,27 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _finds = DbService.recentFinds();
+    // Reload after a scan saves a find, and whenever Home is shown again.
+    DbService.findsChanged.addListener(_reload);
+    MainShell.selectedTab.addListener(_onTabChanged);
+  }
+
+  @override
+  void dispose() {
+    DbService.findsChanged.removeListener(_reload);
+    MainShell.selectedTab.removeListener(_onTabChanged);
+    super.dispose();
+  }
+
+  void _onTabChanged() {
+    if (MainShell.selectedTab.value == MainShell.homeTab) _reload();
+  }
+
+  Future<void> _reload() {
+    if (!mounted) return Future.value();
+    final next = DbService.recentFinds();
+    setState(() => _finds = next);
+    return next.then((_) {}, onError: (_) {});
   }
 
   @override
@@ -144,24 +166,38 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: FutureBuilder<List<Find>>(
                       future: _finds,
                       builder: (context, snap) {
-                        if (snap.connectionState != ConnectionState.done) {
+                        // Keep showing the old list while a refresh loads.
+                        if (snap.connectionState != ConnectionState.done &&
+                            !snap.hasData) {
                           return const Center(
                               child: CircularProgressIndicator());
                         }
                         final finds = snap.data ?? [];
                         if (finds.isEmpty) {
-                          return const Center(
-                            child: Text(
-                              'No finds yet — scan your first crystal!',
-                              style: TextStyle(
-                                fontFamily: 'Montserrat',
-                                fontSize: 16,
-                                color: Colors.black54,
-                              ),
+                          return RefreshIndicator(
+                            onRefresh: _reload,
+                            child: ListView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              children: const [
+                                SizedBox(height: 80),
+                                Center(
+                                  child: Text(
+                                    'No finds yet — scan your first crystal!',
+                                    style: TextStyle(
+                                      fontFamily: 'Montserrat',
+                                      fontSize: 16,
+                                      color: Colors.black54,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           );
                         }
-                        return ListView.separated(
+                        return RefreshIndicator(
+                          onRefresh: _reload,
+                          child: ListView.separated(
+                          physics: const AlwaysScrollableScrollPhysics(),
                           padding: const EdgeInsets.only(bottom: 100),
                           itemCount: finds.length,
                           separatorBuilder: (_, __) =>
@@ -184,6 +220,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             );
                           },
+                        ),
                         );
                       },
                     ),

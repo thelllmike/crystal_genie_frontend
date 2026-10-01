@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../models/admin.dart';
@@ -50,6 +51,10 @@ class DbService {
 
   // ---------- Finds (detection history) ----------
 
+  /// Bumped whenever a find is saved, so the home screen's Recent finds can
+  /// reload (it stays alive in the tab stack and wouldn't otherwise notice).
+  static final ValueNotifier<int> findsChanged = ValueNotifier<int>(0);
+
   static Future<void> addFind({
     required String crystalName,
     String headline = '',
@@ -58,6 +63,7 @@ class DbService {
       'crystal_name': crystalName,
       'headline': headline,
     });
+    findsChanged.value++;
   }
 
   static Future<List<Find>> recentFinds({int limit = 20}) async {
