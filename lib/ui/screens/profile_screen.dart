@@ -1,7 +1,9 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../app_router.dart';
+import '../../core/constants/app_store_config.dart';
 import '../../core/constants/colors.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/db_service.dart';
@@ -287,7 +289,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ],
                   ),
                 ),
-                if (status.isSubscribed && !status.cancelAtPeriodEnd)
+                // Apple handles cancelling; the app can only send people there.
+                if (status.isApple && status.isSubscribed)
+                  TextButton(
+                    onPressed: () => launchUrl(
+                      Uri.parse(AppStoreConfig.manageSubscriptionsUrl),
+                      mode: LaunchMode.externalApplication,
+                    ),
+                    child: const Text(
+                      'Manage',
+                      style: TextStyle(
+                        fontFamily: 'Montserrat',
+                        fontSize: 14,
+                        color: Color(0xFF7A9596),
+                      ),
+                    ),
+                  )
+                else if (status.isSubscribed && !status.cancelAtPeriodEnd)
                   TextButton(
                     onPressed: _cancelSubscription,
                     child: const Text(
@@ -554,6 +572,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         HugeIcons.strokeRoundedLanguageSquare,
                                     label: 'Language',
                                     onTap: _showLanguage,
+                                  ),
+                                  _divider(),
+                                  _buildOption(
+                                    icon: HugeIcons.strokeRoundedPolicy,
+                                    label: 'Privacy Policy',
+                                    onTap: () => launchUrl(
+                                      Uri.parse(
+                                          AppStoreConfig.privacyPolicyUrl),
+                                      mode: LaunchMode.inAppBrowserView,
+                                    ),
                                   ),
                                 ],
                               ),

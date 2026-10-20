@@ -1,5 +1,5 @@
 name: crystal_genie
-description: "A new Flutter project."
+description: "Identify crystals with your camera and learn their meanings."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -41,6 +41,10 @@ dependencies:
   path: ^1.8.2
   supabase_flutter: ^2.8.0
   flutter_stripe: ^11.1.0
+  in_app_purchase: ^3.2.3
+  sign_in_with_apple: ^7.0.1
+  crypto: ^3.0.7
+  url_launcher: ^6.3.2
 
   
 

@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:http/http.dart' as http;
@@ -7,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../constants/api_config.dart';
 import '../constants/stripe_config.dart';
+import 'apple_subscription.dart';
 
 /// A user's trial/subscription state, as reported by the backend.
 class SubscriptionStatus {
@@ -19,6 +22,9 @@ class SubscriptionStatus {
   final bool cancelAtPeriodEnd;
   final String priceLabel;
 
+  /// Where the subscription was bought: 'apple', 'stripe', or null.
+  final String? store;
+
   const SubscriptionStatus({
     required this.status,
     required this.hasAccess,
@@ -27,6 +33,7 @@ class SubscriptionStatus {
     required this.currentPeriodEnd,
     required this.cancelAtPeriodEnd,
     required this.priceLabel,
+    this.store,
   });
 
   bool get isTrialing => status == 'trialing';
@@ -34,6 +41,9 @@ class SubscriptionStatus {
 
   /// True while the trial is still running — used to nudge without blocking.
   bool get isTrialActive => isTrialing && hasAccess;
+
+  /// Bought through Apple, so it's managed in the App Store, not by us.
+  bool get isApple => store == 'apple';
 
   factory SubscriptionStatus.fromJson(Map<String, dynamic> json) {
     DateTime? parse(String? value) =>
@@ -46,14 +56,16 @@ class SubscriptionStatus {
       currentPeriodEnd: parse(json['currentPeriodEnd'] as String?),
       cancelAtPeriodEnd: json['cancelAtPeriodEnd'] as bool? ?? false,
       priceLabel: json['priceLabel'] as String? ?? '\$3.69/month',
+      store: json['store'] as String?,
     );
   }
 }
 
 /// Free trial + $3.69/month premium, used to gate crystal scanning.
 ///
-/// Paid status is decided by Stripe and written to the database by the
-/// backend's webhook — the app only ever reads it.
+/// Android pays through Stripe; iPhone through Apple In-App Purchase
+/// ([AppleSubscription]). Either way the backend confirms the payment and
+/// writes paid status to the database — the app only ever reads it.
 class SubscriptionService {
   static const _baseUrl = ApiConfig.baseUrl;
 
@@ -64,6 +76,9 @@ class SubscriptionService {
   /// Lets widgets rebuild when the status changes (paywall, profile).
   static final ValueNotifier<SubscriptionStatus?> notifier =
       ValueNotifier<SubscriptionStatus?>(null);
+
+  /// The App Store requires Apple's own payments for subscriptions on iOS.
+  static bool get usesApplePurchase => !kIsWeb && Platform.isIOS;
 
   static String? get _token =>
       Supabase.instance.client.auth.currentSession?.accessToken;
@@ -112,11 +127,14 @@ class SubscriptionService {
   }
 
   /// Starts the subscription and confirms the first payment in Stripe's
-  /// payment sheet. Returns true once access is granted.
+  /// payment sheet (Apple's purchase sheet on iOS). Returns true once access
+  /// is granted.
   ///
   /// Throws with a readable message on failure; returns false if the user
   /// dismissed the sheet.
   static Future<bool> subscribe() async {
+    if (usesApplePurchase) return AppleSubscription.buy();
+
     final token = _token;
     if (token == null) throw Exception('You must be signed in to subscribe');
 
@@ -161,6 +179,33 @@ class SubscriptionService {
     return current?.hasAccess ?? false;
   }
 
+  /// Has the backend check a transaction Apple just reported and apply it.
+  /// Throws [PurchaseRejected] when the backend refuses it for good (e.g. the
+  /// subscription belongs to another account).
+  static Future<SubscriptionStatus> verifyApplePurchase(
+      String transactionId) async {
+    final token = _token;
+    if (token == null) throw Exception('You must be signed in');
+    final resp = await http.post(
+      Uri.parse('$_baseUrl/subscription/apple/verify'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode({'transactionId': transactionId}),
+    );
+    if (resp.statusCode == 409) throw PurchaseRejected(_errorFrom(resp));
+    if (resp.statusCode != 200) throw Exception(_errorFrom(resp));
+    final status = SubscriptionStatus.fromJson(
+      json.decode(resp.body) as Map<String, dynamic>,
+    );
+    _set(status);
+    return status;
+  }
+
+  /// Re-links an Apple subscription bought earlier (iOS only).
+  static Future<bool> restore() => AppleSubscription.restore();
+
   /// Stops the subscription renewing; access lasts until the paid period ends.
   static Future<void> cancel() async {
     final token = _token;
@@ -183,4 +228,13 @@ class SubscriptionService {
     }
     return 'Something went wrong (${resp.statusCode})';
   }
+}
+
+/// The backend checked a purchase and refused it; retrying won't help.
+class PurchaseRejected implements Exception {
+  final String message;
+  const PurchaseRejected(this.message);
+
+  @override
+  String toString() => message;
 }
