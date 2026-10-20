@@ -6,6 +6,8 @@ import 'app_router.dart';
 import 'core/constants/colors.dart';
 import 'core/constants/stripe_config.dart';
 import 'core/constants/supabase_config.dart';
+import 'core/services/apple_subscription.dart';
+import 'core/services/subscription_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,6 +28,7 @@ Future<void> main() async {
   } else {
     debugPrint('Stripe not configured: set a real key in StripeConfig.');
   }
+  if (SubscriptionService.usesApplePurchase) AppleSubscription.start();
   runApp(const CrystalGenieApp());
 }
 

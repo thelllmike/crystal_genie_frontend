@@ -1,3 +1,10 @@
+import 'dart:convert';
+import 'dart:io' show Platform;
+import 'dart:math';
+
+import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Thin wrapper around Supabase Auth.
@@ -45,24 +52,67 @@ class AuthService {
   /// AndroidManifest.xml and Info.plist).
   static const _oauthCallback = 'com.crystalgenie.app://login-callback/';
 
-  /// Opens the browser for Google sign-in; the session arrives via the
-  /// deep link and fires onAuthStateChange.
+  static bool get _isIOS => !kIsWeb && Platform.isIOS;
+
+  /// Opens a browser for Google sign-in; the session arrives via the deep
+  /// link and fires onAuthStateChange. On iPhone it stays inside the app —
+  /// App Review rejects logins that bounce out to Safari (guideline 4.0).
   static Future<void> signInWithGoogle() async {
     await _client.auth.signInWithOAuth(
       OAuthProvider.google,
       redirectTo: _oauthCallback,
-      authScreenLaunchMode: LaunchMode.externalApplication,
+      authScreenLaunchMode: _isIOS
+          ? LaunchMode.inAppBrowserView
+          : LaunchMode.externalApplication,
     );
   }
 
   /// Sign in with Apple — required by the App Store when Google login
-  /// is offered (guideline 4.8).
+  /// is offered (guideline 4.8). Uses the native Apple sheet; needs the
+  /// app's bundle id listed under Client IDs in Supabase → Auth → Apple.
+  ///
+  /// Returns quietly if the user closes the sheet.
   static Future<void> signInWithApple() async {
-    await _client.auth.signInWithOAuth(
-      OAuthProvider.apple,
-      redirectTo: _oauthCallback,
-      authScreenLaunchMode: LaunchMode.externalApplication,
+    // Supabase checks the token against the hashed nonce Apple signed into it.
+    final rawNonce = _randomNonce();
+    final AuthorizationCredentialAppleID credential;
+    try {
+      credential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: sha256.convert(utf8.encode(rawNonce)).toString(),
+      );
+    } on SignInWithAppleAuthorizationException catch (e) {
+      if (e.code == AuthorizationErrorCode.canceled) return;
+      rethrow;
+    }
+
+    final idToken = credential.identityToken;
+    if (idToken == null) throw Exception('Apple did not return an ID token');
+    await _client.auth.signInWithIdToken(
+      provider: OAuthProvider.apple,
+      idToken: idToken,
+      nonce: rawNonce,
     );
+
+    // Apple only shares the name on the very first sign-in.
+    final name = [credential.givenName, credential.familyName]
+        .whereType<String>()
+        .join(' ')
+        .trim();
+    if (name.isNotEmpty && (currentUser?.userMetadata?['name'] == null)) {
+      await updateDisplayName(name);
+    }
+  }
+
+  static String _randomNonce([int length = 32]) {
+    const chars =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = Random.secure();
+    return List.generate(length, (_) => chars[random.nextInt(chars.length)])
+        .join();
   }
 
   /// Permanently deletes the account (App Store guideline 5.1.1(v)).

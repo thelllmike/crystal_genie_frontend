@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import '../../core/constants/colors.dart';
+import '../../core/constants/feature_flags.dart';
 import '../../core/services/db_service.dart';
 import '../../models/find.dart';
 import '../widgets/bottom_nav_bar.dart';
@@ -321,20 +322,24 @@ class _SavedCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // image
-              Container(
-                width: 114,
-                height: 114,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFFBF5F3), width: 1),
-                  image: DecorationImage(
-                    image: AssetImage(imagePath),
-                    fit: BoxFit.cover,
+              // image (hidden for now, see FeatureFlags)
+              if (FeatureFlags.showFindImages) ...[
+                Container(
+                  width: 114,
+                  height: 114,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border:
+                        Border.all(color: const Color(0xFFFBF5F3), width: 1),
+                    image: DecorationImage(
+                      image: AssetImage(imagePath),
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
+                const SizedBox(width: 12),
+              ] else
+                const SizedBox(width: 8),
               // details
               Expanded(
                 child: Column(

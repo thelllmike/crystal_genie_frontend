@@ -1,5 +1,5 @@
 name: crystal_genie
-description: "A new Flutter project."
+description: "Identify crystals with your camera and learn their meanings."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+1
+version: 1.0.2+4
 
 environment:
   sdk: ^3.8.1
@@ -41,6 +41,10 @@ dependencies:
   path: ^1.8.2
   supabase_flutter: ^2.8.0
   flutter_stripe: ^11.1.0
+  in_app_purchase: ^3.2.3
+  sign_in_with_apple: ^7.0.1
+  crypto: ^3.0.7
+  url_launcher: ^6.3.2
 
   
 
@@ -55,6 +59,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
+  flutter_native_splash: ^2.4.7
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -112,3 +117,19 @@ flutter_launcher_icons:
   web:
     generate: true
     image_path: "assets/icon/app_icon.png"
+
+# Native launch splash. Regenerate after changing these settings:
+#   dart run flutter_native_splash:create
+flutter_native_splash:
+  color: "#A3005F"
+  background_image: "assets/images/bg.png"
+  image: "assets/images/logo.png"
+  # Android 12+ ignores background images and masks the icon to a circle,
+  # so use the adaptive foreground (safe-zone padded) on a solid color.
+  android_12:
+    color: "#A3005F"
+    image: "assets/icon/adaptive_fg.png"
+  android: true
+  ios: true
+  web: false
+  fullscreen: true

@@ -213,7 +213,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                                           ),
                                         ),
                                         child: _CrystalCard(
-                                          imagePath: 'assets/images/item.png',
+                                          imageUrl: item.imageUrl,
                                           title: item.name,
                                           subtitle: item.headline,
                                           description: item.description,
@@ -235,13 +235,13 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
 /// Card widget for each crystal entry.
 class _CrystalCard extends StatelessWidget {
-  final String imagePath;
+  final String? imageUrl;
   final String title;
   final String subtitle;
   final String description;
 
   const _CrystalCard({
-    required this.imagePath,
+    required this.imageUrl,
     required this.title,
     required this.subtitle,
     required this.description,
@@ -263,23 +263,27 @@ class _CrystalCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Crystal image
-              Container(
-                width: 104,
-                height: 104,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: const Color(0xFFFBF5F3),
-                    width: 1,
-                  ),
-                  image: DecorationImage(
-                    image: AssetImage(imagePath),
-                    fit: BoxFit.cover,
+              // Crystal photo — only when there is one to show (no
+              // placeholder picture; see FeatureFlags.showCrystalPhotos).
+              if (imageUrl != null) ...[
+                Container(
+                  width: 104,
+                  height: 104,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFFFBF5F3),
+                      width: 1,
+                    ),
+                    image: DecorationImage(
+                      image: NetworkImage(imageUrl!),
+                      fit: BoxFit.cover,
+                      onError: (_, __) {},
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
+                const SizedBox(width: 12),
+              ],
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

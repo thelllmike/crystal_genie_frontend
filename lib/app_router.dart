@@ -1,3 +1,4 @@
+import 'package:crystal_genie/ui/screens/admin_dashboard_screen.dart';
 import 'package:crystal_genie/ui/screens/cart_screen.dart';
 import 'package:crystal_genie/ui/screens/login_screen.dart';
 import 'package:crystal_genie/ui/screens/profile_screen.dart';
@@ -22,6 +23,7 @@ class AppRouter {
   static const String savedCrystals = '/saved-crystals';
   static const String shop = '/shop';
   static const String cart = '/cart';
+  static const String admin = '/admin';
 
   /// A centralized [routes] map
   static Map<String, WidgetBuilder> get routes => {
@@ -37,6 +39,7 @@ class AppRouter {
         savedCrystals: (_) => const SavedCrystalsScreen(),
         shop: (_) => const ShopScreen(),
         cart: (_) => const CartScreen(),
+        admin: (_) => const AdminDashboardScreen(),
       };
 
   /// Drill-down pages slide in from the right; everything else cross-fades.
@@ -46,6 +49,7 @@ class AppRouter {
     savedCrystals,
     shop,
     cart,
+    admin,
   };
 
   /// Wraps every named route in a [SmoothPageRoute] so all navigation is

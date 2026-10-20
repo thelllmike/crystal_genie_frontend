@@ -1,9 +1,12 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../app_router.dart';
+import '../../core/constants/app_store_config.dart';
 import '../../core/constants/colors.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/services/db_service.dart';
 import '../../core/services/subscription_service.dart';
 import '../widgets/glass.dart';
 import 'paywall_screen.dart';
@@ -18,12 +21,16 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _notifications = AuthService.notificationsEnabled;
+  bool _isAdmin = false;
 
   @override
   void initState() {
     super.initState();
     // Pick up a renewal or lapse that happened since the app was opened.
     SubscriptionService.refresh();
+    DbService.isAdmin().then((admin) {
+      if (mounted && admin) setState(() => _isAdmin = true);
+    });
   }
 
   void _snack(String message) {
@@ -282,7 +289,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ],
                   ),
                 ),
-                if (status.isSubscribed && !status.cancelAtPeriodEnd)
+                // Apple handles cancelling; the app can only send people there.
+                if (status.isApple && status.isSubscribed)
+                  TextButton(
+                    onPressed: () => launchUrl(
+                      Uri.parse(AppStoreConfig.manageSubscriptionsUrl),
+                      mode: LaunchMode.externalApplication,
+                    ),
+                    child: const Text(
+                      'Manage',
+                      style: TextStyle(
+                        fontFamily: 'Montserrat',
+                        fontSize: 14,
+                        color: Color(0xFF7A9596),
+                      ),
+                    ),
+                  )
+                else if (status.isSubscribed && !status.cancelAtPeriodEnd)
                   TextButton(
                     onPressed: _cancelSubscription,
                     child: const Text(
@@ -493,6 +516,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                               child: Column(
                                 children: [
+                                  if (_isAdmin) ...[
+                                    _buildOption(
+                                      icon: HugeIcons.strokeRoundedDashboardSquare02,
+                                      label: 'Admin Dashboard',
+                                      onTap: () => Navigator.of(context)
+                                          .pushNamed(AppRouter.admin),
+                                    ),
+                                    _divider(),
+                                  ],
                                   _buildOption(
                                     icon: HugeIcons.strokeRoundedBookmark02,
                                     label: 'Saved Crystals',
@@ -540,6 +572,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         HugeIcons.strokeRoundedLanguageSquare,
                                     label: 'Language',
                                     onTap: _showLanguage,
+                                  ),
+                                  _divider(),
+                                  _buildOption(
+                                    icon: HugeIcons.strokeRoundedPolicy,
+                                    label: 'Privacy Policy',
+                                    onTap: () => launchUrl(
+                                      Uri.parse(
+                                          AppStoreConfig.privacyPolicyUrl),
+                                      mode: LaunchMode.inAppBrowserView,
+                                    ),
                                   ),
                                 ],
                               ),
