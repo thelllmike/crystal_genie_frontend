@@ -1,9 +1,13 @@
+import 'dart:io' show Platform;
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../app_router.dart';
 import '../../core/services/auth_service.dart';
-import '../widgets/glass.dart';
+import '../widgets/cg.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -53,15 +57,15 @@ class _SignupScreenState extends State<SignupScreen> {
         // Project has email confirmation enabled.
         await showDialog<void>(
           context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Confirm your email'),
-            content: Text(
-                'We sent a confirmation link to $email. Confirm it, then sign in.'),
+          builder: (ctx) => CGDialog(
+            icon: HugeIcons.strokeRoundedMail01,
+            title: 'Confirm your email',
+            body: Text(
+              'We sent a confirmation link to $email. Confirm it, then sign in.',
+              style: CG.sub(14.5).copyWith(height: 1.55),
+            ),
             actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(),
-                child: const Text('OK'),
-              ),
+              CGButton(label: 'OK', onPressed: () => Navigator.of(ctx).pop()),
             ],
           ),
         );
@@ -76,104 +80,118 @@ class _SignupScreenState extends State<SignupScreen> {
     }
   }
 
+  Future<void> _oauth(Future<void> Function() provider, String label) async {
+    try {
+      await provider();
+    } catch (e) {
+      _showError('$label sign-in failed: $e');
+    }
+  }
+
   void _showError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+    CG.snack(context, message);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF98CBCC),
-      body: Stack(
-        children: [
-          const Positioned(
-            top: 90,
-            left: 0,
-            right: 0,
-            child: Center(child: BackgroundTitle(text: 'Join us,')),
-          ),
-          SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  children: [
-                    Image.asset('assets/images/logo.png', width: 96, height: 96),
-                    const SizedBox(height: 32),
-                    GlassCard(
-                      width: double.infinity,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+    final showApple = !kIsWeb && Platform.isIOS;
+    return CGPage(
+      glow: CG.mint,
+      child: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, c) => SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: c.maxHeight - 40),
+              child: IntrinsicHeight(
+                child: AutofillGroup(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
                         children: [
-                          const Text(
-                            'Create account',
-                            style: TextStyle(
-                              fontFamily: 'PlayfairDisplay',
-                              fontWeight: FontWeight.w600,
-                              fontSize: 32,
-                              color: Color(0xFF1A181B),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          const Text(
-                            'Start your crystal collection',
-                            style: TextStyle(
-                              fontFamily: 'Montserrat',
-                              fontWeight: FontWeight.w300,
-                              fontStyle: FontStyle.italic,
-                              fontSize: 14,
-                              color: Color(0xFF5E5E5E),
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          GlassTextField(controller: _name, hint: 'Name'),
-                          const SizedBox(height: 12),
-                          GlassTextField(
-                            controller: _email,
-                            hint: 'Email',
-                            keyboardType: TextInputType.emailAddress,
-                          ),
-                          const SizedBox(height: 12),
-                          GlassTextField(
-                            controller: _password,
-                            hint: 'Password (min. 6 characters)',
-                            obscure: true,
-                          ),
-                          const SizedBox(height: 24),
-                          SizedBox(
-                            width: double.infinity,
-                            child: GradientButton(
-                              label: 'Create account',
-                              loading: _loading,
-                              onPressed: _signUp,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Center(
-                            child: TextButton(
-                              onPressed: () => Navigator.of(context).pop(),
-                              child: const Text(
-                                'Already have an account? Sign in',
-                                style: TextStyle(
-                                  fontFamily: 'Montserrat',
-                                  fontWeight: FontWeight.w400,
-                                  fontSize: 14,
-                                  color: Color(0xFF29686A),
-                                ),
-                              ),
-                            ),
-                          ),
+                          const Gem(color: Color(0xFFA98BFF), width: 22),
+                          const SizedBox(width: 10),
+                          Expanded(child: Text('Crystal Genie', style: CG.display(20))),
                         ],
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 44),
+                      const CGHeading(
+                        eyebrow: 'Join us',
+                        title: 'Start your crystal collection.',
+                      ),
+                      const SizedBox(height: 10),
+                      Text('Free to try. Scan, save and learn.', style: CG.sub()),
+                      const SizedBox(height: 30),
+                      CGField(
+                        label: 'Name',
+                        controller: _name,
+                        hint: 'Your name',
+                        action: TextInputAction.next,
+                        autofill: const [AutofillHints.name],
+                      ),
+                      const SizedBox(height: 16),
+                      CGField(
+                        label: 'Email',
+                        controller: _email,
+                        hint: 'you@example.com',
+                        keyboardType: TextInputType.emailAddress,
+                        action: TextInputAction.next,
+                        autofill: const [AutofillHints.email],
+                      ),
+                      const SizedBox(height: 16),
+                      CGField(
+                        label: 'Password',
+                        controller: _password,
+                        hint: 'At least 6 characters',
+                        obscure: true,
+                        action: TextInputAction.done,
+                        autofill: const [AutofillHints.newPassword],
+                      ),
+                      const SizedBox(height: 24),
+                      CGButton(label: 'Create account', loading: _loading, onPressed: _signUp),
+                      const SizedBox(height: 22),
+                      const CGDivider('or'),
+                      const SizedBox(height: 22),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CGButton.ghost(
+                              label: 'Google',
+                              onPressed: () => _oauth(AuthService.signInWithGoogle, 'Google'),
+                            ),
+                          ),
+                          if (showApple) ...[
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: CGButton.ghost(
+                                label: 'Apple',
+                                icon: Icons.apple,
+                                onPressed: () => _oauth(AuthService.signInWithApple, 'Apple'),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const Spacer(),
+                      const SizedBox(height: 24),
+                      Center(
+                        child: Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Text('Already have an account?', style: CG.sub()),
+                            CGLink('Sign in', size: 15, onTap: () => Navigator.of(context).pop()),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }

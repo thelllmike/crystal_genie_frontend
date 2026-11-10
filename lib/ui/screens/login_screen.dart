@@ -7,7 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../app_router.dart';
 import '../../core/services/auth_service.dart';
-import '../widgets/glass.dart';
+import '../widgets/cg.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -73,178 +73,103 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _showError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+    CG.snack(context, message);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF98CBCC),
-      body: Stack(
-        children: [
-          const Positioned(
-            top: 90,
-            left: 0,
-            right: 0,
-            child: Center(child: BackgroundTitle(text: 'Welcome back,')),
-          ),
-          SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  children: [
-                    Image.asset('assets/images/logo.png', width: 96, height: 96),
-                    const SizedBox(height: 32),
-                    GlassCard(
-                      width: double.infinity,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Sign in',
-                            style: TextStyle(
-                              fontFamily: 'PlayfairDisplay',
-                              fontWeight: FontWeight.w600,
-                              fontSize: 32,
-                              color: Color(0xFF1A181B),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          const Text(
-                            'Your crystals are waiting for you',
-                            style: TextStyle(
-                              fontFamily: 'Montserrat',
-                              fontWeight: FontWeight.w300,
-                              fontStyle: FontStyle.italic,
-                              fontSize: 14,
-                              color: Color(0xFF5E5E5E),
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          GlassTextField(
-                            controller: _email,
-                            hint: 'Email',
-                            keyboardType: TextInputType.emailAddress,
-                          ),
-                          const SizedBox(height: 12),
-                          GlassTextField(
-                            controller: _password,
-                            hint: 'Password',
-                            obscure: true,
-                          ),
-                          const SizedBox(height: 24),
-                          SizedBox(
-                            width: double.infinity,
-                            child: GradientButton(
-                              label: 'Sign in',
-                              loading: _loading,
-                              onPressed: _signIn,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: const [
-                              Expanded(child: Divider(color: Color(0x80FBF5F3))),
-                              Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 8),
-                                child: Text(
-                                  'or',
-                                  style: TextStyle(
-                                    fontFamily: 'Montserrat',
-                                    fontWeight: FontWeight.w300,
-                                    fontSize: 12,
-                                    color: Color(0xFF5E5E5E),
-                                  ),
-                                ),
-                              ),
-                              Expanded(child: Divider(color: Color(0x80FBF5F3))),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          _SocialButton(
-                            label: 'Continue with Google',
-                            icon: Icons.g_mobiledata_rounded,
-                            onPressed: () => _oauth(
-                                AuthService.signInWithGoogle, 'Google'),
-                          ),
-                          if (!kIsWeb && Platform.isIOS) ...[
-                            const SizedBox(height: 8),
-                            _SocialButton(
-                              label: 'Continue with Apple',
-                              icon: Icons.apple,
-                              onPressed: () =>
-                                  _oauth(AuthService.signInWithApple, 'Apple'),
+    final showApple = !kIsWeb && Platform.isIOS;
+    return CGPage(
+      child: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, c) => SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: c.maxHeight - 40),
+              child: IntrinsicHeight(
+                child: AutofillGroup(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const _BrandMark(),
+                      const SizedBox(height: 44),
+                      const CGHeading(
+                        eyebrow: 'Welcome back',
+                        title: 'Sign in to your collection.',
+                      ),
+                      const SizedBox(height: 10),
+                      Text('Your crystals are waiting for you.', style: CG.sub()),
+                      const SizedBox(height: 30),
+                      CGField(
+                        label: 'Email',
+                        controller: _email,
+                        hint: 'you@example.com',
+                        keyboardType: TextInputType.emailAddress,
+                        action: TextInputAction.next,
+                        autofill: const [AutofillHints.email],
+                      ),
+                      const SizedBox(height: 16),
+                      CGField(
+                        label: 'Password',
+                        controller: _password,
+                        hint: 'Your password',
+                        obscure: true,
+                        action: TextInputAction.done,
+                        autofill: const [AutofillHints.password],
+                      ),
+                      const SizedBox(height: 24),
+                      CGButton(label: 'Sign in', loading: _loading, onPressed: _signIn),
+                      const SizedBox(height: 22),
+                      const CGDivider('or'),
+                      const SizedBox(height: 22),
+                      CGButton.ghost(
+                        label: 'Continue with Google',
+                        onPressed: () => _oauth(AuthService.signInWithGoogle, 'Google'),
+                      ),
+                      if (showApple) ...[
+                        const SizedBox(height: 12),
+                        CGButton.ghost(
+                          label: 'Continue with Apple',
+                          icon: Icons.apple,
+                          onPressed: () => _oauth(AuthService.signInWithApple, 'Apple'),
+                        ),
+                      ],
+                      const Spacer(),
+                      const SizedBox(height: 24),
+                      Center(
+                        child: Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Text('New here?', style: CG.sub()),
+                            CGLink(
+                              'Create an account',
+                              size: 15,
+                              onTap: () => Navigator.of(context).pushNamed(AppRouter.signup),
                             ),
                           ],
-                          const SizedBox(height: 8),
-                          Center(
-                            child: TextButton(
-                              onPressed: () => Navigator.of(context)
-                                  .pushNamed(AppRouter.signup),
-                              child: const Text(
-                                'New here? Create an account',
-                                style: TextStyle(
-                                  fontFamily: 'Montserrat',
-                                  fontWeight: FontWeight.w400,
-                                  fontSize: 14,
-                                  color: Color(0xFF29686A),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
-/// Outlined glass-style button for third-party sign-in providers.
-class _SocialButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final VoidCallback onPressed;
-
-  const _SocialButton({
-    required this.label,
-    required this.icon,
-    required this.onPressed,
-  });
+class _BrandMark extends StatelessWidget {
+  const _BrandMark();
 
   @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 44,
-      child: OutlinedButton.icon(
-        onPressed: onPressed,
-        icon: Icon(icon, size: 22, color: const Color(0xFF1A181B)),
-        label: Text(
-          label,
-          style: const TextStyle(
-            fontFamily: 'Montserrat',
-            fontWeight: FontWeight.w400,
-            fontSize: 14,
-            color: Color(0xFF1A181B),
-          ),
-        ),
-        style: OutlinedButton.styleFrom(
-          backgroundColor: const Color(0x80FBF5F3),
-          side: const BorderSide(color: Color(0x80FBF5F3), width: 1),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Row(
+        children: [
+          const Gem(color: Color(0xFFA98BFF), width: 22),
+          const SizedBox(width: 10),
+          Text('Crystal Genie', style: CG.display(20)),
+        ],
+      );
 }

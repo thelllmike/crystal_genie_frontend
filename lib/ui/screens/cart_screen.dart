@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 
-import '../../core/constants/colors.dart';
 import '../../core/services/db_service.dart';
 import '../../models/cart_item.dart';
-import '../widgets/glass.dart';
+import '../widgets/cg.dart';
 import '../widgets/page_transitions.dart';
 import 'checkout_details_screen.dart';
+import 'main_shell.dart';
 
 /// Shopping cart with checkout (creates an order in Supabase).
 class CartScreen extends StatefulWidget {
@@ -37,9 +37,7 @@ class _CartScreenState extends State<CartScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not load cart: $e')),
-      );
+      CG.snack(context, 'Could not load cart: $e');
     }
   }
 
@@ -59,9 +57,7 @@ class _CartScreenState extends State<CartScreen> {
       await DbService.setCartQuantity(item.id, newQty);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not update cart: $e')),
-      );
+      CG.snack(context, 'Could not update cart: $e');
       _load();
     }
   }
@@ -77,125 +73,84 @@ class _CartScreenState extends State<CartScreen> {
     );
     if (orderId == null || !mounted) return;
 
+    final ordered = List<CartItem>.of(_items);
+    final total = _total;
     setState(() => _items = []);
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Payment received!'),
-        content: Text(
-            'Order #$orderId is confirmed. We\'ll be in touch about delivery.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('OK'),
-          ),
-        ],
+    await Navigator.of(context).pushReplacement(
+      SmoothPageRoute(
+        builder: (_) => OrderConfirmedScreen(orderId: orderId, items: ordered, total: total),
       ),
     );
-    if (mounted) Navigator.of(context).pop();
   }
+
+  Future<void> _remove(CartItem item) => _changeQuantity(item, -item.quantity);
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.neutral20,
-      body: Stack(
-        children: [
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 45,
-            left: 0,
-            right: 0,
-            child: const Center(child: BackgroundTitle(text: 'Your cart')),
-          ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    final count = _items.fold(0, (n, i) => n + i.quantity);
+    return CGPage(
+      glowTop: -340,
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
                 children: [
-                  SizedBox(
-                      height: MediaQuery.of(context).size.width * 0.15),
-                  GlassIconButton(
-                    icon: HugeIcons.strokeRoundedArrowLeft01,
-                    onTap: () => Navigator.of(context).pop(),
+                  const Align(alignment: Alignment.centerLeft, child: CGBack()),
+                  const SizedBox(height: 16),
+                  CGHeading(
+                    title: 'Your cart',
+                    subtitle: _loading ? ' ' : '$count ${count == 1 ? 'item' : 'items'}',
                   ),
-                  const SizedBox(height: 24),
-                  Expanded(
-                    child: _loading
-                        ? const Center(child: CircularProgressIndicator())
-                        : _items.isEmpty
-                            ? const Center(
-                                child: Text(
-                                  'Your cart is empty',
-                                  style: TextStyle(
-                                    fontFamily: 'Montserrat',
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              )
-                            : ListView.separated(
-                                padding: const EdgeInsets.only(bottom: 140),
-                                itemCount: _items.length,
-                                separatorBuilder: (_, __) =>
-                                    const SizedBox(height: 12),
-                                itemBuilder: (context, i) => _CartRow(
-                                  item: _items[i],
-                                  onChange: (d) =>
-                                      _changeQuantity(_items[i], d),
-                                ),
-                              ),
-                  ),
+                  const SizedBox(height: 20),
+                  if (_loading)
+                    const Padding(padding: EdgeInsets.only(top: 60), child: CGLoading())
+                  else if (_items.isEmpty)
+                    CGEmpty(
+                      title: 'Your cart is empty',
+                      message: 'Add a crystal from the shop and it will appear here.',
+                      action: 'Back to shop',
+                      onAction: () => Navigator.of(context).maybePop(),
+                    )
+                  else
+                    for (final item in _items) ...[
+                      _CartRow(
+                        item: item,
+                        onChange: (d) => _changeQuantity(item, d),
+                        onRemove: () => _remove(item),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                 ],
               ),
             ),
-          ),
-
-          // Total + checkout
-          if (!_loading && _items.isNotEmpty)
-            Positioned(
-              bottom: 16,
-              left: 16,
-              right: 16,
-              child: GlassCard(
-                child: Row(
+            if (_items.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                child: Column(
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Total',
-                            style: TextStyle(
-                              fontFamily: 'Montserrat',
-                              fontWeight: FontWeight.w300,
-                              fontSize: 12,
-                              color: Color(0xFF5E5E5E),
-                            ),
-                          ),
-                          Text(
-                            '\$${_total.toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              fontFamily: 'Montserrat',
-                              fontWeight: FontWeight.w600,
-                              fontSize: 24,
-                              color: AppColors.primary40,
-                            ),
-                          ),
-                        ],
-                      ),
+                    Row(
+                      children: [
+                        Expanded(child: Text('Subtotal', style: CG.sub())),
+                        Text('\$${_total.toStringAsFixed(2)}', style: CG.body(15, weight: FontWeight.w500)),
+                      ],
                     ),
-                    SizedBox(
-                      width: 160,
-                      child: GradientButton(
-                        label: 'Checkout',
-                        onPressed: _checkout,
-                      ),
+                    const CGLine(vertical: 14),
+                    Row(
+                      children: [
+                        Expanded(child: Text('Total', style: CG.display(22))),
+                        Text('\$${_total.toStringAsFixed(2)}', style: CG.display(26)),
+                      ],
                     ),
+                    const SizedBox(height: 18),
+                    CGButton(label: 'Checkout', onPressed: _checkout),
                   ],
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -204,94 +159,150 @@ class _CartScreenState extends State<CartScreen> {
 class _CartRow extends StatelessWidget {
   final CartItem item;
   final void Function(int delta) onChange;
+  final VoidCallback onRemove;
 
-  const _CartRow({required this.item, required this.onChange});
+  const _CartRow({required this.item, required this.onChange, required this.onRemove});
 
   @override
   Widget build(BuildContext context) {
     final product = item.product;
-
-    Widget qtyButton(IconData icon, int delta) => GestureDetector(
-          onTap: () => onChange(delta),
-          child: Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              color: const Color(0x3434A0A4),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0x5934A0A4), width: 1),
-            ),
-            child: Icon(icon, size: 16, color: const Color(0xFF34A0A4)),
-          ),
-        );
-
-    return GlassCard(
-      padding: const EdgeInsets.all(8),
-      child: Row(
+    return CGCard(
+      padding: const EdgeInsets.all(12),
+      child: Column(
         children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFFBF5F3), width: 1),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: product.imageUrl != null && product.imageUrl!.isNotEmpty
-                ? Image.network(
-                    product.imageUrl!,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Image.asset(
-                        'assets/images/item.png',
-                        fit: BoxFit.cover),
-                  )
-                : Image.asset('assets/images/item.png', fit: BoxFit.cover),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  product.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontFamily: 'PlayfairDisplay',
-                    fontWeight: FontWeight.w600,
-                    fontSize: 18,
-                    color: Color(0xFF1A181B),
-                  ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CrystalThumb(name: product.name, imageUrl: product.imageUrl, width: 72, height: 72),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(product.name, style: CG.display(19).copyWith(height: 1.15)),
+                    const SizedBox(height: 2),
+                    Text('\$${product.price.toStringAsFixed(2)} each', style: CG.mute(13)),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  '\$${product.price.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    fontFamily: 'Montserrat',
-                    fontWeight: FontWeight.w500,
-                    fontSize: 14,
-                    color: AppColors.primary40,
+              ),
+              IconButton(
+                tooltip: 'Remove ${product.name}',
+                onPressed: onRemove,
+                icon: const Icon(HugeIcons.strokeRoundedDelete02, size: 18, color: CG.tx3),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.only(left: 86),
+            child: Row(
+              children: [
+                CGStepper(
+                  value: item.quantity,
+                  onMinus: () => onChange(-1),
+                  onPlus: () => onChange(1),
+                ),
+                Expanded(
+                  child: Text(
+                    '\$${item.lineTotal.toStringAsFixed(2)}',
+                    textAlign: TextAlign.right,
+                    style: CG.body(17, weight: FontWeight.w700),
                   ),
                 ),
               ],
             ),
           ),
-          qtyButton(Icons.remove, -1),
-          SizedBox(
-            width: 36,
-            child: Center(
-              child: Text(
-                '${item.quantity}',
-                style: const TextStyle(
-                  fontFamily: 'Montserrat',
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
+        ],
+      ),
+    );
+  }
+}
+
+/// Full-screen confirmation after a successful payment.
+class OrderConfirmedScreen extends StatelessWidget {
+  final int orderId;
+  final List<CartItem> items;
+  final double total;
+
+  const OrderConfirmedScreen({
+    super.key,
+    required this.orderId,
+    required this.items,
+    required this.total,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return CGPage(
+      glow: CG.mint,
+      glowTop: -60,
+      glowSize: 720,
+      rings: true,
+      ringsTop: 120,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+          child: Column(
+            children: [
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.only(top: 90),
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 112,
+                        height: 112,
+                        decoration: BoxDecoration(
+                          color: CG.brand,
+                          shape: BoxShape.circle,
+                          boxShadow: [BoxShadow(color: CG.mint.withValues(alpha: .14), spreadRadius: 12)],
+                        ),
+                        child: const Icon(HugeIcons.strokeRoundedTick02, color: CG.onBrand, size: 52),
+                      ),
+                    ),
+                    const SizedBox(height: 36),
+                    Text('Payment received!', textAlign: TextAlign.center, style: CG.display(36)),
+                    const SizedBox(height: 12),
+                    Text(
+                      "Order #$orderId is confirmed. We'll be in touch about delivery.",
+                      textAlign: TextAlign.center,
+                      style: CG.sub(),
+                    ),
+                    const SizedBox(height: 32),
+                    CGCard(
+                      child: Column(
+                        children: [
+                          for (final (i, it) in items.indexed) ...[
+                            if (i > 0) const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                Expanded(child: Text('${it.product.name} ×${it.quantity}', style: CG.sub(14))),
+                                Text('\$${it.lineTotal.toStringAsFixed(2)}', style: CG.body(14)),
+                              ],
+                            ),
+                          ],
+                          const CGLine(vertical: 10),
+                          Row(
+                            children: [
+                              Expanded(child: Text('Paid', style: CG.display(18))),
+                              Text('\$${total.toStringAsFixed(2)}', style: CG.display(22)),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
+              CGButton(
+                label: 'Done',
+                onPressed: () => MainShell.goToTab(context, MainShell.homeTab),
+              ),
+              const SizedBox(height: 12),
+              CGButton.ghost(label: 'Back to shop', onPressed: () => Navigator.of(context).pop()),
+            ],
           ),
-          qtyButton(Icons.add, 1),
-        ],
+        ),
       ),
     );
   }

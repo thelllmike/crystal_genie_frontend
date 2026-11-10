@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 
 import '../../app_router.dart';
-import '../../core/constants/colors.dart';
 import '../../core/services/db_service.dart';
 import '../../models/product.dart';
-import '../widgets/glass.dart';
+import '../widgets/cg.dart';
 
 /// Crystal shop — products come from the Supabase `products` table.
 class ShopScreen extends StatefulWidget {
@@ -18,68 +17,70 @@ class ShopScreen extends StatefulWidget {
 class _ShopScreenState extends State<ShopScreen> {
   late Future<List<Product>> _products;
   bool _isAdmin = false;
+  int _cartCount = 0;
+  double _cartTotal = 0;
 
   @override
   void initState() {
     super.initState();
     _products = DbService.fetchProducts();
+    _loadCart();
     DbService.isAdmin().then((admin) {
       if (mounted && admin) setState(() => _isAdmin = true);
     });
   }
 
   void _reload() {
-    setState(() => _products = DbService.fetchProducts());
+    setState(() { _products = DbService.fetchProducts(); });
+    _loadCart();
+  }
+
+  Future<void> _loadCart() async {
+    try {
+      final items = await DbService.fetchCart();
+      if (!mounted) return;
+      setState(() {
+        _cartCount = items.fold(0, (n, i) => n + i.quantity);
+        _cartTotal = items.fold(0.0, (t, i) => t + i.lineTotal);
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _openCart() async {
+    await Navigator.of(context).pushNamed(AppRouter.cart);
+    if (mounted) _loadCart();
   }
 
   Future<void> _addToCart(Product product) async {
     try {
       await DbService.addToCart(product.id);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${product.name} added to cart')),
-      );
+      _loadCart();
+      CG.snack(context, '${product.name} added to cart');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not add to cart: $e')),
-      );
+      CG.snack(context, 'Could not add to cart: $e');
     }
   }
 
   Future<void> _deleteProduct(Product product) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Delete ${product.name}?'),
-        content: const Text(
-            'This removes the product from the shop and from all carts.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Delete',
-                style: TextStyle(color: Color(0xFF932115))),
-          ),
-        ],
-      ),
+    final confirmed = await showCGConfirm(
+      context,
+      title: 'Delete ${product.name}?',
+      message: 'This removes the product from the shop and from all carts.',
+      confirmLabel: 'Delete',
+      destructive: true,
+      icon: HugeIcons.strokeRoundedDelete02,
     );
     if (confirmed != true) return;
     try {
       await DbService.deleteProduct(product.id);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${product.name} deleted')),
-      );
+      CG.snack(context, '${product.name} deleted');
       _reload();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not delete: $e')),
-      );
+      CG.snack(context, 'Could not delete: $e');
     }
   }
 
@@ -92,53 +93,47 @@ class _ShopScreenState extends State<ShopScreen> {
 
     final added = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Add product'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: name,
-                decoration: const InputDecoration(labelText: 'Name'),
-              ),
-              TextField(
-                controller: headline,
-                decoration:
-                    const InputDecoration(labelText: 'Headline (optional)'),
-              ),
-              TextField(
-                controller: price,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Price (\$)'),
-              ),
-              TextField(
-                controller: stock,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Stock'),
-              ),
-              TextField(
-                controller: imageUrl,
-                decoration:
-                    const InputDecoration(labelText: 'Image URL (optional)'),
-              ),
-            ],
-          ),
+      barrierColor: const Color(0x6B14262A),
+      builder: (ctx) => CGDialog(
+        title: 'Add product',
+        body: Column(
+          children: [
+            CGField(label: 'Name', controller: name, small: true),
+            const SizedBox(height: 12),
+            CGField(label: 'Headline (optional)', controller: headline, small: true),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: CGField(
+                    label: 'Price (\$)',
+                    controller: price,
+                    small: true,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: CGField(
+                    label: 'Stock',
+                    controller: stock,
+                    small: true,
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            CGField(label: 'Image URL (optional)', controller: imageUrl, small: true),
+          ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
+          CGButton(
+            label: 'Add product',
             onPressed: () async {
               final p = double.tryParse(price.text.trim());
               if (name.text.trim().isEmpty || p == null) {
-                ScaffoldMessenger.of(ctx).showSnackBar(
-                  const SnackBar(
-                      content: Text('Name and a valid price are required')),
-                );
+                CG.snack(ctx, 'Name and a valid price are required');
                 return;
               }
               try {
@@ -151,15 +146,11 @@ class _ShopScreenState extends State<ShopScreen> {
                 );
                 if (ctx.mounted) Navigator.of(ctx).pop(true);
               } catch (e) {
-                if (ctx.mounted) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(
-                    SnackBar(content: Text('Could not add: $e')),
-                  );
-                }
+                if (ctx.mounted) CG.snack(ctx, 'Could not add: $e');
               }
             },
-            child: const Text('Add'),
           ),
+          CGButton.ghost(label: 'Cancel', onPressed: () => Navigator.of(ctx).pop(false)),
         ],
       ),
     );
@@ -168,101 +159,117 @@ class _ShopScreenState extends State<ShopScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.neutral20,
-      body: Stack(
-        children: [
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 45,
-            left: 0,
-            right: 0,
-            child: const Center(child: BackgroundTitle(text: 'Crystal shop')),
-          ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                      height: MediaQuery.of(context).size.width * 0.15),
-                  // Back + cart row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      GlassIconButton(
-                        icon: HugeIcons.strokeRoundedArrowLeft01,
-                        onTap: () => Navigator.of(context).pop(),
-                      ),
-                      Row(
-                        children: [
-                          if (_isAdmin) ...[
-                            GlassIconButton(
-                              icon: HugeIcons.strokeRoundedPlusSignCircle,
-                              onTap: _showAddProductDialog,
-                            ),
-                            const SizedBox(width: 8),
-                          ],
-                          GlassIconButton(
-                            icon: HugeIcons.strokeRoundedShoppingCart01,
-                            onTap: () =>
-                                Navigator.of(context).pushNamed(AppRouter.cart),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  Expanded(
-                    child: FutureBuilder<List<Product>>(
-                      future: _products,
-                      builder: (context, snap) {
-                        if (snap.connectionState != ConnectionState.done) {
-                          return const Center(
-                              child: CircularProgressIndicator());
-                        }
-                        if (snap.hasError) {
-                          return Center(
-                            child: Text(
-                              'Could not load the shop:\n${snap.error}',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(fontFamily: 'Montserrat'),
-                            ),
-                          );
-                        }
-                        final products = snap.data ?? [];
-                        if (products.isEmpty) {
-                          return const Center(
-                            child: Text(
-                              'No products yet — check back soon!',
-                              style: TextStyle(
-                                fontFamily: 'Montserrat',
-                                fontSize: 16,
+    return CGPage(
+      glowTop: -340,
+      bottom: _cartCount > 0
+          ? Positioned(
+              left: 20,
+              right: 20,
+              bottom: 0,
+              child: SafeArea(
+                top: false,
+                minimum: const EdgeInsets.only(bottom: 16),
+                child: Material(
+                  color: CG.brand,
+                  borderRadius: BorderRadius.circular(22),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: _openCart,
+                    child: SizedBox(
+                      height: 64,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '$_cartCount ${_cartCount == 1 ? 'item' : 'items'} · \$${_cartTotal.toStringAsFixed(2)}',
+                                style: CG.body(16, color: CG.onBrand, weight: FontWeight.w700),
                               ),
                             ),
-                          );
-                        }
-                        return ListView.separated(
-                          padding: const EdgeInsets.only(bottom: 24),
-                          itemCount: products.length,
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(height: 16),
-                          itemBuilder: (context, i) => _ProductCard(
-                            product: products[i],
-                            onAdd: () => _addToCart(products[i]),
-                            onDelete: _isAdmin
-                                ? () => _deleteProduct(products[i])
-                                : null,
-                          ),
-                        );
-                      },
+                            Text('View cart', style: CG.body(16, color: CG.onBrand, weight: FontWeight.w700)),
+                            const SizedBox(width: 6),
+                            const Icon(HugeIcons.strokeRoundedArrowRight01, color: CG.onBrand, size: 18),
+                          ],
+                        ),
+                      ),
                     ),
+                  ),
+                ),
+              ),
+            )
+          : null,
+      child: SafeArea(
+        bottom: false,
+        child: FutureBuilder<List<Product>>(
+          future: _products,
+          builder: (context, snap) {
+            final header = <Widget>[
+              Row(
+                children: [
+                  const CGBack(),
+                  const Spacer(),
+                  if (_isAdmin) ...[
+                    CGIconButton(
+                      icon: HugeIcons.strokeRoundedPlusSignCircle,
+                      tooltip: 'Add product',
+                      onTap: _showAddProductDialog,
+                    ),
+                    const SizedBox(width: 10),
+                  ],
+                  CGIconButton(
+                    icon: HugeIcons.strokeRoundedShoppingCart01,
+                    tooltip: 'Cart',
+                    badge: _cartCount,
+                    onTap: _openCart,
                   ),
                 ],
               ),
-            ),
-          ),
-        ],
+              const SizedBox(height: 18),
+              const CGHeading(eyebrow: 'Hand-picked', title: 'Crystal shop'),
+              const SizedBox(height: 22),
+            ];
+            Widget body;
+            if (snap.connectionState != ConnectionState.done) {
+              body = const Padding(padding: EdgeInsets.only(top: 60), child: CGLoading());
+            } else if (snap.hasError) {
+              body = CGEmpty(
+                title: 'Could not load the shop',
+                message: '${snap.error}',
+                action: 'Try again',
+                onAction: _reload,
+              );
+            } else if ((snap.data ?? []).isEmpty) {
+              body = const CGEmpty(
+                title: 'No products yet',
+                message: 'Check back soon for hand-picked crystals.',
+              );
+            } else {
+              final products = snap.data!;
+              body = Column(
+                children: [
+                  for (final p in products) ...[
+                    _ProductCard(
+                      product: p,
+                      onAdd: () => _addToCart(p),
+                      onDelete: _isAdmin ? () => _deleteProduct(p) : null,
+                    ),
+                    const SizedBox(height: 14),
+                  ],
+                ],
+              );
+            }
+            return RefreshIndicator(
+              color: CG.brand,
+              onRefresh: () async => _reload(),
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 110),
+                children: [...header, body],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -278,118 +285,73 @@ class _ProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final soldOut = product.stock <= 0;
-
-    return GlassCard(
-      padding: const EdgeInsets.all(8),
-      child: Row(
-        children: [
-          Container(
-            width: 96,
-            height: 96,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFFBF5F3), width: 1),
+    final color = CG.crystalColor(product.name);
+    return CGCard(
+      padding: const EdgeInsets.all(12),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Opacity(
+              opacity: soldOut ? .55 : 1,
+              child: CrystalThumb(
+                name: product.name,
+                imageUrl: product.imageUrl,
+                width: 112,
+                height: 128,
+                fallbackChild: GemCluster(color: color, width: 76, height: 88),
+              ),
             ),
-            clipBehavior: Clip.antiAlias,
-            child: product.imageUrl != null && product.imageUrl!.isNotEmpty
-                ? Image.network(
-                    product.imageUrl!,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Image.asset(
-                        'assets/images/item.png',
-                        fit: BoxFit.cover),
-                  )
-                : Image.asset('assets/images/item.png', fit: BoxFit.cover),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+            const SizedBox(width: 16),
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
                         child: Text(
                           product.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontFamily: 'PlayfairDisplay',
-                            fontWeight: FontWeight.w600,
-                            fontSize: 20,
-                            height: 1.1,
-                            color: Color(0xFF1A181B),
-                          ),
+                          style: CG.display(20, color: soldOut ? CG.tx2 : CG.tx).copyWith(height: 1.15),
                         ),
                       ),
                       if (onDelete != null)
-                        GestureDetector(
+                        InkWell(
                           onTap: onDelete,
+                          customBorder: const CircleBorder(),
                           child: const Padding(
-                            padding: EdgeInsets.only(right: 8),
-                            child: Icon(
-                              HugeIcons.strokeRoundedDelete02,
-                              size: 20,
-                              color: Color(0xFF932115),
-                            ),
+                            padding: EdgeInsets.all(4),
+                            child: Icon(HugeIcons.strokeRoundedDelete02, size: 18, color: CG.danger),
                           ),
                         ),
                     ],
                   ),
                   if (product.headline.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      product.headline,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontFamily: 'Montserrat',
-                        fontWeight: FontWeight.w300,
-                        fontStyle: FontStyle.italic,
-                        fontSize: 12,
-                        color: Color(0xFF5E5E5E),
-                      ),
-                    ),
+                    const SizedBox(height: 4),
+                    Text(product.headline, maxLines: 2, overflow: TextOverflow.ellipsis, style: CG.sub(13)),
                   ],
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
+                  const Spacer(),
                   Row(
                     children: [
                       Expanded(
                         child: Text(
                           '\$${product.price.toStringAsFixed(2)}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontFamily: 'Montserrat',
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                            color: AppColors.primary40,
-                          ),
+                          style: CG.body(17, weight: FontWeight.w700, color: soldOut ? CG.tx3 : CG.tx),
                         ),
                       ),
-                      soldOut
-                          ? const Text(
-                              'Sold out',
-                              style: TextStyle(
-                                fontFamily: 'Montserrat',
-                                fontSize: 13,
-                                color: Color(0xFF932115),
-                              ),
-                            )
-                          : GradientButton(
-                              label: 'Add to cart',
-                              height: 34,
-                              onPressed: onAdd,
-                            ),
+                      if (soldOut)
+                        const CGStatus('Sold out', color: CG.off)
+                      else
+                        CGButton(label: 'Add', small: true, expand: false, onPressed: onAdd),
                     ],
                   ),
                 ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

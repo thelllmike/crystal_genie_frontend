@@ -3,11 +3,11 @@ import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app_router.dart';
-import 'core/constants/colors.dart';
 import 'core/constants/stripe_config.dart';
 import 'core/constants/supabase_config.dart';
 import 'core/services/apple_subscription.dart';
 import 'core/services/subscription_service.dart';
+import 'ui/widgets/cg.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,9 +40,55 @@ class CrystalGenieApp extends StatelessWidget {
     return MaterialApp(
       title: 'Crystal Genie',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
-        fontFamily: 'Montserrat',
-        scaffoldBackgroundColor: AppColors.primaryBg,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: CG.brand,
+          primary: CG.brand,
+          surface: CG.bg,
+          error: CG.danger,
+        ),
+        fontFamily: CG.sans,
+        scaffoldBackgroundColor: CG.bg,
+        splashFactory: InkSparkle.splashFactory,
+        progressIndicatorTheme:
+            const ProgressIndicatorThemeData(color: CG.brand),
+        snackBarTheme: SnackBarThemeData(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: CG.tx,
+          contentTextStyle: CG.body(14,
+              color: Colors.white, weight: FontWeight.w700, height: 1.3),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16)),
+          insetPadding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+        ),
+        dialogTheme: DialogThemeData(
+          backgroundColor: CG.s2,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(28)),
+          titleTextStyle: CG.display(24),
+          contentTextStyle: CG.sub(14.5),
+        ),
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(
+            foregroundColor: CG.brand,
+            textStyle: CG.body(15, weight: FontWeight.w700),
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: CG.s1,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: CG.line2),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: CG.line2),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: CG.brand, width: 1.5),
+          ),
+        ),
       ),
       initialRoute: AppRouter.splash,
       onGenerateRoute: AppRouter.onGenerateRoute,

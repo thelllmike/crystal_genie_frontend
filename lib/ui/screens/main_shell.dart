@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/services/subscription_service.dart';
-import '../widgets/bottom_nav_bar.dart';
+import '../widgets/cg.dart';
 import 'TakePhotoScreen.dart';
 import 'explore_screen.dart';
 import 'home_screen.dart';
@@ -80,22 +80,22 @@ class _MainShellState extends State<MainShell> {
           // The camera tab has its own bottom control pill and hides the shell
           // nav entirely — two stacked bars collide and the top one wins. Its
           // back arrow returns to the Home tab.
-          if (index != MainShell.cameraTab)
+          if (index != MainShell.cameraTab) ...[
+            const Positioned(left: 0, right: 0, bottom: 0, child: CGBottomFade()),
             Positioned(
-              left: 16,
-              right: 16,
+              left: 20,
+              right: 20,
               bottom: 0,
               child: SafeArea(
                 top: false,
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: BottomNavBar(
-                    selectedIndex: index,
-                    onTap: (i) => MainShell.selectedTab.value = i,
-                  ),
+                minimum: const EdgeInsets.only(bottom: 12),
+                child: CGNavBar(
+                  selectedIndex: index,
+                  onTap: (i) => MainShell.selectedTab.value = i,
                 ),
               ),
             ),
+          ],
         ],
       ),
     );

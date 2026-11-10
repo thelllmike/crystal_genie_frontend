@@ -3,13 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 
-import '../../core/constants/colors.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/db_service.dart';
 import '../../core/services/order_email_service.dart';
 import '../../core/services/payment_service.dart';
 import '../../models/cart_item.dart';
-import '../widgets/glass.dart';
+import '../widgets/cg.dart';
 
 /// Shipping/contact details + order summary shown before payment.
 ///
@@ -65,9 +64,7 @@ class _CheckoutDetailsScreenState extends State<CheckoutDetailsScreen> {
   Future<void> _pay() async {
     final missing = _missingField();
     if (missing != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please enter your $missing')),
-      );
+      CG.snack(context, 'Please enter your $missing');
       return;
     }
 
@@ -77,9 +74,7 @@ class _CheckoutDetailsScreenState extends State<CheckoutDetailsScreen> {
       final paid = await PaymentService.payForCart();
       if (!paid) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Payment canceled')),
-          );
+          CG.snack(context, 'Payment canceled');
         }
         return;
       }
@@ -116,9 +111,7 @@ class _CheckoutDetailsScreenState extends State<CheckoutDetailsScreen> {
       Navigator.of(context).pop(orderId); // hand the id back to the cart
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Checkout failed: $e')),
-      );
+      CG.snack(context, 'Checkout failed: $e');
     } finally {
       if (mounted) setState(() => _paying = false);
     }
@@ -126,180 +119,152 @@ class _CheckoutDetailsScreenState extends State<CheckoutDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.neutral20,
-      body: Stack(
-        children: [
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 45,
-            left: 0,
-            right: 0,
-            child: const Center(child: BackgroundTitle(text: 'Checkout')),
-          ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(height: MediaQuery.of(context).size.width * 0.15),
-                  GlassIconButton(
-                    icon: HugeIcons.strokeRoundedArrowLeft01,
-                    onTap: () => Navigator.of(context).pop(),
-                  ),
-                  const SizedBox(height: 24),
-                  Expanded(
-                    child: ListView(
-                      padding: const EdgeInsets.only(bottom: 120),
+    return CGPage(
+      glowTop: -340,
+      child: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: AutofillGroup(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                  children: [
+                    Row(
                       children: [
-                        _sectionLabel('Shipping details'),
-                        const SizedBox(height: 12),
-                        GlassCard(
-                          child: Column(
-                            children: [
-                              GlassTextField(
-                                controller: _name,
-                                hint: 'Full name',
-                              ),
-                              const SizedBox(height: 12),
-                              GlassTextField(
-                                controller: _phone,
-                                hint: 'Phone number',
-                                keyboardType: TextInputType.phone,
-                              ),
-                              const SizedBox(height: 12),
-                              GlassTextField(
-                                controller: _address,
-                                hint: 'Address',
-                              ),
-                              const SizedBox(height: 12),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: GlassTextField(
-                                      controller: _city,
-                                      hint: 'City',
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: GlassTextField(
-                                      controller: _postal,
-                                      hint: 'Postal code',
-                                      keyboardType: TextInputType.number,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              GestureDetector(
-                                behavior: HitTestBehavior.opaque,
-                                onTap: () =>
-                                    setState(() => _saveAddress = !_saveAddress),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      _saveAddress
-                                          ? Icons.check_box
-                                          : Icons.check_box_outline_blank,
-                                      size: 20,
-                                      color: AppColors.primary40,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    const Text(
-                                      'Save this address for next time',
-                                      style: TextStyle(
-                                        fontFamily: 'Montserrat',
-                                        fontSize: 13,
-                                        color: Color(0xFF1A181B),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
+                        CGBack(onTap: _paying ? null : () => Navigator.of(context).maybePop()),
+                        const Spacer(),
+                        const CGChip('Step 1 of 2 · Shipping'),
+                        const Spacer(),
+                        const SizedBox(width: 44),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Text('Checkout', style: CG.display(32)),
+                    const SizedBox(height: 16),
+                    CGField(
+                      label: 'Full name',
+                      controller: _name,
+                      small: true,
+                      action: TextInputAction.next,
+                      autofill: const [AutofillHints.name],
+                    ),
+                    const SizedBox(height: 10),
+                    CGField(
+                      label: 'Phone number',
+                      controller: _phone,
+                      hint: '+94 77 123 4567',
+                      small: true,
+                      keyboardType: TextInputType.phone,
+                      action: TextInputAction.next,
+                      autofill: const [AutofillHints.telephoneNumber],
+                    ),
+                    const SizedBox(height: 10),
+                    CGField(
+                      label: 'Address',
+                      controller: _address,
+                      hint: 'Street and number',
+                      small: true,
+                      action: TextInputAction.next,
+                      autofill: const [AutofillHints.streetAddressLine1],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: CGField(
+                            label: 'City',
+                            controller: _city,
+                            hint: 'City',
+                            small: true,
+                            action: TextInputAction.next,
+                            autofill: const [AutofillHints.addressCity],
                           ),
                         ),
-                        const SizedBox(height: 24),
-                        _sectionLabel('Order summary'),
-                        const SizedBox(height: 12),
-                        GlassCard(
-                          child: Column(
-                            children: [
-                              for (final item in widget.items)
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 8),
-                                  child: _summaryRow(
-                                    '${item.product.name}  ×${item.quantity}',
-                                    '\$${item.lineTotal.toStringAsFixed(2)}',
-                                  ),
-                                ),
-                              const Divider(height: 16),
-                              _summaryRow(
-                                'Total',
-                                '\$${widget.total.toStringAsFixed(2)}',
-                                bold: true,
-                              ),
-                            ],
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: CGField(
+                            label: 'Postal code',
+                            controller: _postal,
+                            hint: '00000',
+                            small: true,
+                            action: TextInputAction.done,
+                            autofill: const [AutofillHints.postalCode],
                           ),
                         ),
                       ],
                     ),
+                    InkWell(
+                      onTap: () => setState(() => _saveAddress = !_saveAddress),
+                      borderRadius: BorderRadius.circular(12),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: 52),
+                        child: Row(
+                          children: [
+                            CGCheck(value: _saveAddress),
+                            const SizedBox(width: 12),
+                            Text('Save this address for next time', style: CG.body(14.5)),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    CGCard(
+                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                      child: Column(
+                        children: [
+                          for (final (i, item) in widget.items.indexed) ...[
+                            if (i > 0) const SizedBox(height: 6),
+                            _summaryRow('${item.product.name} ×${item.quantity}',
+                                '\$${item.lineTotal.toStringAsFixed(2)}'),
+                          ],
+                          const CGLine(vertical: 10),
+                          Row(
+                            children: [
+                              Expanded(child: Text('Total', style: CG.display(19))),
+                              Text('\$${widget.total.toStringAsFixed(2)}', style: CG.display(22)),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              child: Column(
+                children: [
+                  CGButton(
+                    label: 'Pay \$${widget.total.toStringAsFixed(2)}',
+                    loading: _paying,
+                    onPressed: _pay,
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(HugeIcons.strokeRoundedSecurityLock, size: 14, color: CG.tx3),
+                      const SizedBox(width: 6),
+                      Text('Secure card payment by Stripe', style: CG.mute(12)),
+                    ],
                   ),
                 ],
               ),
             ),
-          ),
-          // Pay button pinned to the bottom.
-          Positioned(
-            bottom: 16,
-            left: 16,
-            right: 16,
-            child: GradientButton(
-              label: 'Pay \$${widget.total.toStringAsFixed(2)}',
-              loading: _paying,
-              onPressed: _pay,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _sectionLabel(String text) => Text(
-        text,
-        style: const TextStyle(
-          fontFamily: 'Montserrat',
-          fontWeight: FontWeight.w600,
-          fontSize: 18,
-          color: Color(0xFF1A181B),
-        ),
-      );
-
-  Widget _summaryRow(String label, String value, {bool bold = false}) => Row(
+  Widget _summaryRow(String label, String value) => Row(
         children: [
           Expanded(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontFamily: 'Montserrat',
-                fontWeight: bold ? FontWeight.w600 : FontWeight.w400,
-                fontSize: bold ? 16 : 14,
-                color: const Color(0xFF1A181B),
-              ),
-            ),
+            child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: CG.sub(14)),
           ),
-          Text(
-            value,
-            style: TextStyle(
-              fontFamily: 'Montserrat',
-              fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-              fontSize: bold ? 16 : 14,
-              color: bold ? AppColors.primary40 : const Color(0xFF1A181B),
-            ),
-          ),
+          Text(value, style: CG.body(14)),
         ],
       );
 }

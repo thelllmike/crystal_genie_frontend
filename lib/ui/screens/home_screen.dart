@@ -1,12 +1,12 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import '../../app_router.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/db_service.dart';
+import '../../core/services/subscription_service.dart';
 import '../../models/find.dart';
 import '../widgets/find_card.dart';
-import '../widgets/glass.dart';
+import '../widgets/cg.dart';
 import '../widgets/page_transitions.dart';
 import 'crystal_detail_screen.dart';
 import 'main_shell.dart';
@@ -45,191 +45,197 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _reload() {
     if (!mounted) return Future.value();
     final next = DbService.recentFinds();
-    setState(() => _finds = next);
+    setState(() { _finds = next; });
     return next.then((_) {}, onError: (_) {});
+  }
+
+  String get _greeting {
+    final h = DateTime.now().hour;
+    if (h < 12) return 'Good morning';
+    if (h < 18) return 'Good afternoon';
+    return 'Good evening';
+  }
+
+  String get _firstName {
+    final name = AuthService.displayName.trim();
+    return name.isEmpty ? 'there' : name.split(RegExp(r'\s+')).first;
+  }
+
+  void _openDetail(String name) => Navigator.of(context).push(
+        SmoothPageRoute(
+          transition: SmoothTransition.slide,
+          builder: (_) => CrystalDetailScreen(crystalName: name),
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    return CGPage(
+      glowTop: -300,
+      child: SafeArea(
+        bottom: false,
+        child: RefreshIndicator(
+          color: CG.brand,
+          onRefresh: _reload,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 140),
+            children: [
+              _header(),
+              const SizedBox(height: 24),
+              const _ScanHero(),
+              const SizedBox(height: 28),
+              FutureBuilder<List<Find>>(
+                future: _finds,
+                builder: (context, snap) {
+                  final loading =
+                      snap.connectionState != ConnectionState.done && !snap.hasData;
+                  final finds = snap.data ?? [];
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(child: Text('Recent finds', style: CG.display(22))),
+                          if (finds.isNotEmpty)
+                            CGLink(
+                              'See all',
+                              onTap: () => Navigator.of(context).pushNamed(AppRouter.savedCrystals),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      if (loading)
+                        const Padding(padding: EdgeInsets.only(top: 40), child: CGLoading())
+                      else if (finds.isEmpty)
+                        CGEmpty(
+                          title: 'No finds yet',
+                          message: 'Scan your first crystal and it will show up here.',
+                          action: 'Open camera',
+                          onAction: () => MainShell.selectedTab.value = MainShell.cameraTab,
+                        )
+                      else
+                        for (final f in finds) ...[
+                          FindCard(
+                            name: f.crystalName,
+                            headline: f.headline,
+                            timeAgo: f.timeAgo,
+                            onTap: () => _openDetail(f.crystalName),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _header() {
+    return Row(
+      children: [
+        Semantics(
+          button: true,
+          label: 'Profile',
+          child: GestureDetector(
+            onTap: () => Navigator.of(context).pushNamed(AppRouter.profile),
+            child: CGAvatar(initials: AuthService.initials),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(_greeting, style: CG.mute(13)),
+              Text(_firstName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: CG.display(24).copyWith(height: 1.1)),
+            ],
+          ),
+        ),
+        CGIconButton(
+          icon: HugeIcons.strokeRoundedBookmark02,
+          tooltip: 'Saved crystals',
+          onTap: () => Navigator.of(context).pushNamed(AppRouter.savedCrystals),
+        ),
+        const SizedBox(width: 12),
+        CGIconButton(
+          icon: HugeIcons.strokeRoundedShoppingBag02,
+          tooltip: 'Crystal shop',
+          onTap: () => Navigator.of(context).pushNamed(AppRouter.shop),
+        ),
+      ],
+    );
+  }
+}
+
+/// "Identify a crystal" card with the trial/premium status.
+class _ScanHero extends StatelessWidget {
+  const _ScanHero();
+
+  String? _statusLabel(SubscriptionStatus? s) {
+    if (s == null) return null;
+    if (s.isSubscribed) return 'Premium';
+    if (s.isTrialActive) {
+      final d = s.trialDaysLeft;
+      return 'Free trial · $d ${d == 1 ? 'day' : 'days'} left';
+    }
+    return 'Trial ended';
   }
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    const padding = 16.0;
-    final cardWidth = width - padding * 2;
-
-   return Scaffold(
-      backgroundColor: const Color(0xFF98CBCC),
-      body: SafeArea(
+    return Container(
+      height: 196,
+      decoration: BoxDecoration(
+        gradient: CG.softGradient,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: CG.line2),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
         child: Stack(
           children: [
-            // Centered “Hi welcome,” behind the bar
             const Positioned(
-              top: 45,
-              left: 0,
-              right: 0,
-              child: Center(child: BackgroundTitle(text: 'Hi welcome,')),
+              right: 20,
+              bottom: -6,
+              child: GemCluster(color: Color(0xFFA98BFF), width: 128, height: 150),
             ),
-
-            // Main content
             Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: padding, vertical: padding / 2),
+              padding: const EdgeInsets.all(22),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(height: width * 0.15),
-
-                  // Blurred pill AppBar
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(99),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
-                      child: Container(
-                        width: cardWidth,
-                        height: 60,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: const Color(0x59FBF5F3),
-                          borderRadius: BorderRadius.circular(99),
-                          border: Border.all(
-                              color: const Color(0x80FBF5F3), width: 1),
-                        ),
-                        child: Row(
-                          children: [
-                            GestureDetector(
-                              onTap: () => Navigator.of(context)
-                                  .pushNamed(AppRouter.profile),
-                              child: Row(
-                                children: [
-                                  CircleAvatar(
-                                    radius: 18,
-                                    backgroundColor:
-                                        const Color(0xFF34A0A4),
-                                    child: Text(
-                                      AuthService.initials,
-                                      style: const TextStyle(
-                                        fontFamily: 'Montserrat',
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 13,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    AuthService.displayName,
-                                    style: const TextStyle(
-                                      fontFamily: 'Montserrat',
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 18,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const Spacer(),
-                            IconButton(
-                              icon: const Icon(
-                                  HugeIcons.strokeRoundedShoppingBag02,
-                                  size: 24,
-                                  color: Colors.black87),
-                              onPressed: () => Navigator.of(context)
-                                  .pushNamed(AppRouter.shop),
-                            ),
-                            IconButton(
-                              icon: const Icon(
-                                  HugeIcons.strokeRoundedSettings03,
-                                  size: 24,
-                                  color: Colors.black87),
-                              onPressed: () => Navigator.of(context)
-                                  .pushNamed(AppRouter.profile),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                  ValueListenableBuilder<SubscriptionStatus?>(
+                    valueListenable: SubscriptionService.notifier,
+                    builder: (_, status, __) {
+                      final label = _statusLabel(status);
+                      if (label == null) return const SizedBox(height: 26);
+                      return CGTag(label, color: CG.mint, dot: false);
+                    },
                   ),
-
-                  const SizedBox(height: 32),
-                  const Text(
-                    'Recent Finds',
-                    style: TextStyle(
-                      fontFamily: 'Montserrat',
-                      fontWeight: FontWeight.w600,
-                      fontSize: 24,
-                      height: 1.0,
-                      color: Colors.black87,
-                    ),
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: 190,
+                    child: Text('Identify a crystal', style: CG.display(28)),
                   ),
-                  const SizedBox(height: 16),
-
-                  // List of FindCards
-                  Expanded(
-                    child: FutureBuilder<List<Find>>(
-                      future: _finds,
-                      builder: (context, snap) {
-                        // Keep showing the old list while a refresh loads.
-                        if (snap.connectionState != ConnectionState.done &&
-                            !snap.hasData) {
-                          return const Center(
-                              child: CircularProgressIndicator());
-                        }
-                        final finds = snap.data ?? [];
-                        if (finds.isEmpty) {
-                          return RefreshIndicator(
-                            onRefresh: _reload,
-                            child: ListView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              children: const [
-                                SizedBox(height: 80),
-                                Center(
-                                  child: Text(
-                                    'No finds yet — scan your first crystal!',
-                                    style: TextStyle(
-                                      fontFamily: 'Montserrat',
-                                      fontSize: 16,
-                                      color: Colors.black54,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-                        return RefreshIndicator(
-                          onRefresh: _reload,
-                          child: ListView.separated(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.only(bottom: 100),
-                          itemCount: finds.length,
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(height: 16),
-                          itemBuilder: (_, i) {
-                            final f = finds[i];
-                            return FindCard(
-                              width: cardWidth,
-                              imagePath: 'assets/images/item.png',
-                              title: f.crystalName,
-                              subtitle: f.headline,
-                              timeAgo: f.timeAgo,
-                              onLearnMore: () => Navigator.of(context).push(
-                                SmoothPageRoute(
-                                  transition: SmoothTransition.slide,
-                                  builder: (_) => CrystalDetailScreen(
-                                    crystalName: f.crystalName,
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                        );
-                      },
-                    ),
+                  const Spacer(),
+                  CGButton(
+                    label: 'Scan now',
+                    icon: HugeIcons.strokeRoundedCamera01,
+                    small: true,
+                    expand: false,
+                    onPressed: () => MainShell.selectedTab.value = MainShell.cameraTab,
                   ),
                 ],
               ),
             ),
-
-            // The floating bottom nav bar is owned by MainShell.
           ],
         ),
       ),

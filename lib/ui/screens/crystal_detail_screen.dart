@@ -1,12 +1,12 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 
-import '../../core/constants/colors.dart';
+import '../../app_router.dart';
+import '../../core/constants/feature_flags.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/db_service.dart';
 import '../../models/crystal.dart';
-import '../widgets/glass.dart';
+import '../widgets/cg.dart';
 
 /// Read-only crystal detail page (opened from "Learn more" in the library
 /// or saved crystals). Styled to match the scan result screen.
@@ -47,9 +47,7 @@ class _CrystalDetailScreenState extends State<CrystalDetailScreen> {
   Future<void> _save() async {
     if (_saved) return;
     if (!AuthService.isLoggedIn) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sign in to save crystals')),
-      );
+      CG.snack(context, 'Sign in to save crystals');
       return;
     }
     try {
@@ -59,14 +57,10 @@ class _CrystalDetailScreenState extends State<CrystalDetailScreen> {
       );
       if (!mounted) return;
       setState(() => _saved = true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${_crystal?.name ?? widget.crystalName} saved')),
-      );
+      CG.snack(context, '${_crystal?.name ?? widget.crystalName} saved');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not save: $e')),
-      );
+      CG.snack(context, 'Could not save: $e');
     }
   }
 
@@ -77,225 +71,102 @@ class _CrystalDetailScreenState extends State<CrystalDetailScreen> {
     final desc = _crystal?.description ?? '';
     final star = _crystal?.starSign ?? '';
     final chakras = _crystal?.chakras ?? '';
+    final color = CG.crystalColor(name);
+    final photo = FeatureFlags.showCrystalPhotos ? _crystal?.imageUrl : null;
 
-    const imgH = 380.0;
-    const overlap = 64.0;
-    final photo = _crystal?.imageUrl;
-    final cardW = MediaQuery.of(context).size.width - 32;
-
-    return Scaffold(
-      backgroundColor: AppColors.neutral20,
-      body: Stack(
-        children: [
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 45,
-            left: 0,
-            right: 0,
-            child: const Center(child: BackgroundTitle(text: 'You\'ve got a')),
-          ),
-          SafeArea(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Column(
+    return CGPage(
+      glow: color,
+      glowTop: -200,
+      child: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+              child: Row(
+                children: [
+                  const CGBack(),
+                  const Spacer(),
+                  CGIconButton(
+                    icon: _saved
+                        ? HugeIcons.strokeRoundedBookmarkCheck02
+                        : HugeIcons.strokeRoundedBookmark02,
+                    tooltip: _saved ? 'Saved' : 'Save crystal',
+                    background: _saved ? CG.brand : null,
+                    foreground: _saved ? CG.onBrand : null,
+                    borderColor: _saved ? CG.brand : null,
+                    onTap: _save,
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: _loading
+                  ? const CGLoading()
+                  : ListView(
+                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
                       children: [
-                        SizedBox(
-                            height:
-                                MediaQuery.of(context).size.width * 0.15),
-
-                        // Name pill with back + bookmark
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(99),
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
-                            child: Container(
-                              width: cardW,
-                              height: 60,
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
-                              decoration: BoxDecoration(
-                                color: const Color(0x59FBF5F3),
-                                borderRadius: BorderRadius.circular(99),
-                                border: Border.all(
-                                    color: const Color(0x80FBF5F3), width: 1),
-                              ),
-                              child: Row(
+                        Row(
+                          children: [
+                            CrystalThumb(
+                              name: name,
+                              imageUrl: photo,
+                              width: 128,
+                              height: 150,
+                              radius: 28,
+                              fallbackChild: GemCluster(color: color, width: 92, height: 106),
+                            ),
+                            const SizedBox(width: 20),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  GestureDetector(
-                                    onTap: () => Navigator.of(context).pop(),
-                                    child: const Icon(
-                                        HugeIcons.strokeRoundedArrowLeft01,
-                                        size: 22,
-                                        color: Color(0xFF1A181B)),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      name,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        fontFamily: 'PlayfairDisplay',
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 24,
-                                        height: 1.0,
-                                        color: Color(0xFF1A181B),
-                                      ),
-                                    ),
-                                  ),
-                                  GestureDetector(
-                                    onTap: _save,
-                                    child: Icon(
-                                      _saved
-                                          ? HugeIcons
-                                              .strokeRoundedBookmarkCheck02
-                                          : HugeIcons.strokeRoundedBookmark02,
-                                      size: 24,
-                                      color: _saved
-                                          ? AppColors.primary40
-                                          : const Color(0xFF1A181B),
-                                    ),
-                                  ),
+                                  Text('CRYSTAL', style: CG.eyebrow()),
+                                  const SizedBox(height: 6),
+                                  Text(name, style: CG.display(name.length > 14 ? 32 : 40).copyWith(height: 1.02)),
+                                  if (headline.isNotEmpty) ...[
+                                    const SizedBox(height: 8),
+                                    Text(headline, style: CG.sub(14.5).copyWith(fontStyle: FontStyle.italic)),
+                                  ],
                                 ],
                               ),
                             ),
+                          ],
+                        ),
+                        if (CG.splitList(chakras).isNotEmpty) ...[
+                          const SizedBox(height: 22),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              for (final c in CG.splitList(chakras)) CGTag(c, color: color),
+                            ],
+                          ),
+                        ],
+                        const SizedBox(height: 22),
+                        CGFactGrid(starSign: star, chakras: chakras),
+                        const SizedBox(height: 26),
+                        Text('Meaning', style: CG.display(20)),
+                        const SizedBox(height: 8),
+                        Text(
+                          desc.isNotEmpty ? desc : 'No description available for this crystal yet.',
+                          style: CG.sub(14.5).copyWith(
+                            height: 1.6,
+                            fontStyle: desc.isNotEmpty ? null : FontStyle.italic,
                           ),
                         ),
-
-                        const SizedBox(height: 16),
-
-                        // Photo from the admin panel — none (and no placeholder)
-                        // when there isn't one; see FeatureFlags.showCrystalPhotos.
-                        if (photo != null)
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
-                            child: Container(
-                              width: cardW,
-                              height: imgH,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                    color: const Color(0x80FFFFFF), width: 2),
-                              ),
-                              child: Image.network(
-                                photo,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Image.asset(
-                                    'assets/images/item.png',
-                                    fit: BoxFit.cover),
-                              ),
-                            ),
-                          ),
-
-                        // Detail card overlapping the image
-                        Transform.translate(
-                          // Overlaps the photo; sits in its place without one.
-                          offset: Offset(0, photo != null ? -overlap : 0),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
-                            child: BackdropFilter(
-                              filter:
-                                  ImageFilter.blur(sigmaX: 128, sigmaY: 128),
-                              child: Container(
-                                width: cardW,
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: const Color(0x59FBF5F3),
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      name,
-                                      style: const TextStyle(
-                                        fontFamily: 'PlayfairDisplay',
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 24,
-                                        color: Color(0xFF1A181B),
-                                      ),
-                                    ),
-                                    if (headline.isNotEmpty) ...[
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        headline,
-                                        style: const TextStyle(
-                                          fontFamily: 'Montserrat',
-                                          fontWeight: FontWeight.w300,
-                                          fontSize: 14,
-                                          fontStyle: FontStyle.italic,
-                                          color: Color(0xFF5E5E5E),
-                                        ),
-                                      ),
-                                    ],
-                                    const SizedBox(height: 12),
-                                    Row(
-                                      children: [
-                                        const Icon(
-                                            HugeIcons.strokeRoundedConstellation,
-                                            size: 20,
-                                            color: Color(0xFF1A181B)),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          star.isNotEmpty ? star : 'N/A',
-                                          style: const TextStyle(
-                                            fontFamily: 'Montserrat',
-                                            fontSize: 13,
-                                            color: Color(0xFF1A181B),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 16),
-                                        const Icon(
-                                            HugeIcons.strokeRoundedSpirals,
-                                            size: 20,
-                                            color: Color(0xFF1A181B)),
-                                        const SizedBox(width: 4),
-                                        Expanded(
-                                          child: Text(
-                                            chakras.isNotEmpty ? chakras : 'N/A',
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              fontFamily: 'Montserrat',
-                                              fontSize: 13,
-                                              color: Color(0xFF1A181B),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      desc.isNotEmpty
-                                          ? desc
-                                          : 'No description available for this crystal yet.',
-                                      style: TextStyle(
-                                        fontFamily: 'Montserrat',
-                                        fontWeight: FontWeight.w400,
-                                        fontSize: 14,
-                                        height: 1.5,
-                                        fontStyle: desc.isNotEmpty
-                                            ? FontStyle.normal
-                                            : FontStyle.italic,
-                                        color: desc.isNotEmpty
-                                            ? const Color(0xFF1A181B)
-                                            : const Color(0xFF5E5E5E),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 24),
                       ],
                     ),
-                  ),
-          ),
-        ],
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+              child: CGButton(
+                label: 'Shop crystals',
+                icon: HugeIcons.strokeRoundedShoppingBag02,
+                onPressed: () => Navigator.of(context).pushNamed(AppRouter.shop),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

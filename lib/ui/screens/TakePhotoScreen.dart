@@ -6,7 +6,7 @@ import 'package:hugeicons/hugeicons.dart';
 import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../core/constants/colors.dart';
+import '../widgets/cg.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/db_service.dart';
@@ -26,7 +26,12 @@ class TakePhotoScreen extends StatefulWidget {
   State<TakePhotoScreen> createState() => _TakePhotoScreenState();
 }
 
-class _TakePhotoScreenState extends State<TakePhotoScreen> {
+class _TakePhotoScreenState extends State<TakePhotoScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _scan = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2200),
+  )..repeat(reverse: true);
   List<CameraDescription> _cameras = [];
   CameraController? _controller;
   bool _usingFront = false;
@@ -93,6 +98,7 @@ class _TakePhotoScreenState extends State<TakePhotoScreen> {
 
   @override
   void dispose() {
+    _scan.dispose();
     _controller?.dispose();
     super.dispose();
   }
@@ -136,7 +142,8 @@ class _TakePhotoScreenState extends State<TakePhotoScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
+      barrierColor: const Color(0x6B14262A),
+      builder: (_) => const _Identifying(),
     );
     try {
       final dets = await ApiService().detectCrystal(file.path);
@@ -144,11 +151,7 @@ class _TakePhotoScreenState extends State<TakePhotoScreen> {
       Navigator.of(context).pop(); // hide loader
       if (dets.isEmpty) {
         setState(() => _pickedImage = null);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No crystal detected — keep it within the frame and try again'),
-          ),
-        );
+        CG.snack(context, 'No crystal detected. Keep it within the frame and try again.');
         return;
       }
       // Record the find in the user's history (best effort).
@@ -167,9 +170,7 @@ class _TakePhotoScreenState extends State<TakePhotoScreen> {
     } catch (e) {
       if (!mounted) return;
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      CG.snack(context, 'Error: $e');
     }
   }
 
@@ -181,11 +182,10 @@ class _TakePhotoScreenState extends State<TakePhotoScreen> {
     }
     if (_controller?.value.isInitialized ?? false) {
       final size = _controller!.value.previewSize;
-      if (size == null) return const ColoredBox(color: Colors.black);
+      if (size == null) return const ColoredBox(color: CG.s3);
       return FittedBox(
         fit: BoxFit.cover,
         child: SizedBox(
-          // previewSize is landscape-oriented, so swap width/height.
           width: size.height,
           height: size.width,
           child: CameraPreview(_controller!),
@@ -193,135 +193,247 @@ class _TakePhotoScreenState extends State<TakePhotoScreen> {
       );
     }
     if (_noCamera) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Text(
-            'No camera available —\npick a photo from the gallery',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-                fontFamily: 'Montserrat', fontSize: 15, color: Color(0xFF5E5E5E)),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const GemCluster(color: Color(0xFF9B7DF0), width: 96, height: 112),
+              const SizedBox(height: 18),
+              Text(
+                'No camera available.\nPick a photo from your gallery.',
+                textAlign: TextAlign.center,
+                style: CG.sub(14),
+              ),
+            ],
           ),
         ),
       );
     }
-    return const Center(child: CircularProgressIndicator());
+    return const CGLoading();
+  }
+
+  Widget _corner(Alignment a) {
+    const side = BorderSide(color: CG.brand, width: 3);
+    const r = Radius.circular(26);
+    final top = a.y < 0, left = a.x < 0;
+    return Align(
+      alignment: a,
+      child: Container(
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          border: Border(
+            top: top ? side : BorderSide.none,
+            bottom: top ? BorderSide.none : side,
+            left: left ? side : BorderSide.none,
+            right: left ? BorderSide.none : side,
+          ),
+          borderRadius: BorderRadius.only(
+            topLeft: top && left ? r : Radius.zero,
+            topRight: top && !left ? r : Radius.zero,
+            bottomLeft: !top && left ? r : Radius.zero,
+            bottomRight: !top && !left ? r : Radius.zero,
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    const glass = Color(0xD1FFFFFF);
     return Scaffold(
-      backgroundColor: AppColors.neutral20,
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            // Square frame that fits the width but never crowds the controls.
-            final frameSize = (constraints.maxWidth - 32)
-                .clamp(0.0, constraints.maxHeight * 0.6);
-
-            return Padding(
-              // MainShell hides its nav bar on this tab, so the control pill
-              // below is the only bottom bar and sits flush above the safe area.
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: Column(
-                children: [
-                  SizedBox(height: constraints.maxHeight * 0.06),
-
-                  // Top bar: back + title
-                  Row(
-                    children: [
-                      GestureDetector(
-                        // Inside the shell there is nothing to pop — the back
-                        // arrow returns to the Home tab.
-                        onTap: () =>
-                            MainShell.selectedTab.value = MainShell.homeTab,
-                        child: const Icon(HugeIcons.strokeRoundedArrowLeft01,
-                            size: 24, color: Color(0xFF1A181B)),
-                      ),
-                      const Expanded(
-                        child: Text(
-                          'Keep your crystal within the frame',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontFamily: 'Montserrat',
-                            fontWeight: FontWeight.w500,
-                            fontSize: 15,
-                            color: Color(0xFF1A181B),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 24),
-                    ],
-                  ),
-
-                  SizedBox(height: constraints.maxHeight * 0.06),
-
-                  // Camera frame
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      width: frameSize,
-                      height: frameSize,
-                      decoration: BoxDecoration(
-                        color: AppColors.neutral,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                            color: const Color(0xFFBFD9D9), width: 1),
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      child: _framePreview(),
-                    ),
-                  ),
-
-                  const Spacer(),
-
-                  // Bottom control pill
-                  Container(
-                    height: 80,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0x59FBF5F3),
-                      borderRadius: BorderRadius.circular(99),
-                      border:
-                          Border.all(color: const Color(0x80FBF5F3), width: 1),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      backgroundColor: const Color(0xFFF1F5F5),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment(0, -.12),
+            radius: 1.1,
+            colors: [Color(0xFFFFFFFF), Color(0xFFF1F5F5), Color(0xFFE3EBEB)],
+            stops: [0, .55, 1],
+          ),
+        ),
+        child: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, c) {
+              final frameW = (c.maxWidth - 110).clamp(200.0, 320.0);
+              final frameH = (frameW * 340 / 280).clamp(0.0, c.maxHeight * .5);
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+                child: Column(
+                  children: [
+                    Row(
                       children: [
-                        IconButton(
-                          icon: const Icon(HugeIcons.strokeRoundedAlbum02),
-                          color: AppColors.neutral100,
-                          iconSize: 28,
-                          onPressed: _pickFromGallery,
+                        CGIconButton(
+                          icon: HugeIcons.strokeRoundedCancel01,
+                          tooltip: 'Close camera',
+                          background: glass,
+                          onTap: () => MainShell.selectedTab.value = MainShell.homeTab,
                         ),
-                        GestureDetector(
-                          onTap: () {
-                            if (_pickedImage != null) {
-                              setState(() => _pickedImage = null);
-                            } else {
-                              _takePhoto();
-                            }
-                          },
-                          child: Image.asset(
-                            'assets/icons/takephotobutton.png',
-                            width: 64,
-                            height: 64,
+                        const Spacer(),
+                        const CGChip('Scan a crystal', background: glass),
+                        const Spacer(),
+                        const SizedBox(width: 44),
+                      ],
+                    ),
+                    const Spacer(),
+                    SizedBox(
+                      width: frameW,
+                      height: frameH,
+                      child: Stack(
+                        children: [
+                          Positioned.fill(
+                            child: Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(20),
+                                child: ColoredBox(color: CG.s2, child: _framePreview()),
+                              ),
+                            ),
+                          ),
+                          _corner(Alignment.topLeft),
+                          _corner(Alignment.topRight),
+                          _corner(Alignment.bottomLeft),
+                          _corner(Alignment.bottomRight),
+                          if (_pickedImage == null)
+                            AnimatedBuilder(
+                              animation: _scan,
+                              builder: (_, __) => Positioned(
+                                left: 14,
+                                right: 14,
+                                top: 14 + (frameH - 30) * _scan.value,
+                                child: Container(
+                                  height: 2,
+                                  decoration: const BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [Color(0x001D7F80), CG.brand, Color(0x001D7F80)],
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(color: Color(0x80187A7B), blurRadius: 14),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    Text(
+                      'Keep your crystal within the frame',
+                      textAlign: TextAlign.center,
+                      style: CG.body(17, weight: FontWeight.w500),
+                    ),
+                    const SizedBox(height: 14),
+                    const Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      alignment: WrapAlignment.center,
+                      children: [
+                        CGChip('Good light', background: glass),
+                        CGChip('Plain background', background: glass),
+                      ],
+                    ),
+                    const Spacer(),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CGIconButton(
+                          icon: HugeIcons.strokeRoundedImage01,
+                          tooltip: 'Choose from gallery',
+                          size: 56,
+                          background: glass,
+                          onTap: _pickFromGallery,
+                        ),
+                        const SizedBox(width: 44),
+                        Semantics(
+                          button: true,
+                          label: _pickedImage != null ? 'Retake' : 'Take photo',
+                          child: GestureDetector(
+                            onTap: () {
+                              if (_pickedImage != null) {
+                                setState(() => _pickedImage = null);
+                              } else {
+                                _takePhoto();
+                              }
+                            },
+                            child: Container(
+                              width: 84,
+                              height: 84,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(color: CG.tx, width: 3),
+                              ),
+                              alignment: Alignment.center,
+                              child: Container(
+                                width: 66,
+                                height: 66,
+                                decoration: const BoxDecoration(color: CG.tx, shape: BoxShape.circle),
+                              ),
+                            ),
                           ),
                         ),
-                        IconButton(
-                          icon: const Icon(HugeIcons.strokeRoundedExchange01),
-                          color: AppColors.neutral100,
-                          iconSize: 28,
-                          onPressed: _switchCamera,
+                        const SizedBox(width: 44),
+                        CGIconButton(
+                          icon: HugeIcons.strokeRoundedExchange01,
+                          tooltip: 'Flip camera',
+                          size: 56,
+                          background: glass,
+                          onTap: _switchCamera,
                         ),
                       ],
                     ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Shown while the photo is being identified.
+class _Identifying extends StatelessWidget {
+  const _Identifying();
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      child: Center(
+        child: Container(
+          width: 220,
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+          decoration: BoxDecoration(
+            color: CG.s1,
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: CG.line2),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const GemCluster(color: Color(0xFFA98BFF), width: 72, height: 84),
+              const SizedBox(height: 18),
+              Text('Identifying…',
+                  style: CG.display(20), textAlign: TextAlign.center),
+              const SizedBox(height: 14),
+              const ClipRRect(
+                borderRadius: BorderRadius.all(Radius.circular(2)),
+                child: SizedBox(
+                  width: 96,
+                  child: LinearProgressIndicator(
+                    minHeight: 3,
+                    backgroundColor: CG.s3,
+                    color: CG.brand,
                   ),
-                ],
+                ),
               ),
-            );
-          },
+            ],
+          ),
         ),
       ),
     );

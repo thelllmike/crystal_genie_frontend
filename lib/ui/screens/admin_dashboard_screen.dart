@@ -1,47 +1,81 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:hugeicons/hugeicons.dart';
 
-import '../../core/constants/colors.dart';
 import '../../core/services/db_service.dart';
 import '../../models/admin.dart';
 import '../../models/crystal.dart';
 import '../../models/product.dart';
+import '../widgets/cg.dart';
+import '../widgets/page_transitions.dart';
 
 /// Admin-only dashboard: edit crystals and shop items, see orders (with
 /// shipping addresses) and subscribers. Reached from the profile screen.
-class AdminDashboardScreen extends StatelessWidget {
+class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
 
   @override
+  State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+}
+
+class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
+  static const _tabs = ['Orders', 'Subscribers', 'Shop', 'Crystals'];
+  int _tab = 0;
+
+  @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 4,
-      child: Scaffold(
-        backgroundColor: AppColors.neutral20,
-        appBar: AppBar(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          title: const Text('Admin dashboard'),
-          bottom: const TabBar(
-            isScrollable: true,
-            tabAlignment: TabAlignment.start,
-            labelColor: Colors.white,
-            unselectedLabelColor: Color(0xCCFFFFFF),
-            indicatorColor: Colors.white,
-            tabs: [
-              Tab(text: 'Orders'),
-              Tab(text: 'Subscribers'),
-              Tab(text: 'Shop'),
-              Tab(text: 'Crystals'),
-            ],
-          ),
-        ),
-        body: const TabBarView(
+    return CGPage(
+      glow: CG.mint,
+      glowTop: -360,
+      child: SafeArea(
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _OrdersTab(),
-            _SubscribersTab(),
-            _ShopTab(),
-            _CrystalsTab(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+              child: Row(
+                children: [
+                  const CGBack(),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('ADMIN DASHBOARD', style: CG.eyebrow()),
+                        const SizedBox(height: 2),
+                        Text(_tabs[_tab], style: CG.display(30).copyWith(height: 1.1)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(
+              height: 64,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
+                itemCount: _tabs.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 6),
+                itemBuilder: (_, i) => CGChip(
+                  _tabs[i],
+                  selected: i == _tab,
+                  onTap: () => setState(() => _tab = i),
+                ),
+              ),
+            ),
+            Expanded(
+              child: IndexedStack(
+                index: _tab,
+                children: const [
+                  _OrdersTab(),
+                  _SubscribersTab(),
+                  _ShopTab(),
+                  _CrystalsTab(),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -53,17 +87,15 @@ class AdminDashboardScreen extends StatelessWidget {
 // Shared bits
 // ---------------------------------------------------------------------------
 
-void _snack(BuildContext context, String message) {
-  ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(content: Text(message)));
-}
+void _snack(BuildContext context, String message) => CG.snack(context, message);
 
-String _date(DateTime d) =>
-    '${d.day}/${d.month}/${d.year}';
+String _date(DateTime d) => '${d.day}/${d.month}/${d.year}';
 
 String _dateTime(DateTime d) =>
     '${_date(d)} ${d.hour.toString().padLeft(2, '0')}:'
     '${d.minute.toString().padLeft(2, '0')}';
+
+const _listPadding = EdgeInsets.fromLTRB(20, 2, 20, 110);
 
 /// FutureBuilder with loading / error / pull-to-refresh handled.
 class _Loader<T> extends StatelessWidget {
@@ -83,25 +115,27 @@ class _Loader<T> extends StatelessWidget {
       future: future,
       builder: (context, snap) {
         if (snap.connectionState != ConnectionState.done) {
-          return const Center(child: CircularProgressIndicator());
+          return const CGLoading();
         }
         if (snap.hasError) {
           return RefreshIndicator(
+            color: CG.brand,
             onRefresh: onRefresh,
             child: ListView(
-              padding: const EdgeInsets.all(24),
+              padding: _listPadding,
               children: [
-                Text(
-                  'Could not load:\n${snap.error}\n\n'
-                  'If this mentions admin_orders / admin_subscribers, run '
-                  'backend/admin_dashboard.sql in the Supabase SQL editor.',
-                  textAlign: TextAlign.center,
+                CGEmpty(
+                  title: 'Could not load',
+                  message: '${snap.error}\n\n'
+                      'If this mentions admin_orders / admin_subscribers, run '
+                      'backend/admin_dashboard.sql in the Supabase SQL editor.',
                 ),
               ],
             ),
           );
         }
         return RefreshIndicator(
+          color: CG.brand,
           onRefresh: onRefresh,
           child: builder(snap.data as T),
         );
@@ -110,63 +144,88 @@ class _Loader<T> extends StatelessWidget {
   }
 }
 
-class _StatBox extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _StatBox(this.label, this.value);
+class _StatRow extends StatelessWidget {
+  final List<(String, String, Color)> stats;
+  const _StatRow(this.stats);
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Card(
-        color: Colors.white,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-          child: Column(
-            children: [
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary40,
+    return Row(
+      children: [
+        for (final (i, s) in stats.indexed) ...[
+          if (i > 0) const SizedBox(width: 10),
+          Expanded(
+            child: CGCard(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(s.$2, style: CG.display(26, color: s.$3).copyWith(height: 1.1)),
+                  ),
+                  Text(s.$1, style: CG.sub(12)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _Fab extends StatelessWidget {
+  final String label;
+  final VoidCallback onPressed;
+  const _Fab({required this.label, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) => Positioned(
+        right: 20,
+        bottom: 0,
+        child: SafeArea(
+          top: false,
+          minimum: const EdgeInsets.only(bottom: 16),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: const [
+                BoxShadow(color: Color(0x595ED3CB), blurRadius: 28, offset: Offset(0, 8)),
+              ],
+            ),
+            child: Material(
+              color: CG.brand,
+              shape: const StadiumBorder(),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: onPressed,
+                child: SizedBox(
+                  height: 56,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(HugeIcons.strokeRoundedPlusSign, color: CG.onBrand, size: 22),
+                        const SizedBox(width: 8),
+                        Text(label, style: CG.body(16, color: CG.onBrand, weight: FontWeight.w700)),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(label,
-                  style: const TextStyle(
-                      fontSize: 12, color: AppColors.neutral60)),
-            ],
+            ),
           ),
         ),
-      ),
-    );
-  }
+      );
 }
 
-class _Pill extends StatelessWidget {
-  final String text;
-  final Color color;
-
-  const _Pill(this.text, this.color);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-            fontSize: 12, fontWeight: FontWeight.w600, color: color),
-      ),
+Widget _sectionLabel(String text) => Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Text(text.toUpperCase(), style: CG.eyebrow(color: CG.tx3).copyWith(fontSize: 10.5)),
     );
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Orders
@@ -184,7 +243,7 @@ class _OrdersTabState extends State<_OrdersTab> {
 
   Future<void> _reload() async {
     final next = DbService.adminOrders();
-    setState(() => _orders = next);
+    setState(() { _orders = next; });
     await next.catchError((_) => <AdminOrder>[]);
   }
 
@@ -208,23 +267,21 @@ class _OrdersTabState extends State<_OrdersTab> {
         final revenue = orders.fold<double>(0, (sum, o) => sum + o.total);
         final toShip = orders.where((o) => o.status == 'pending').length;
         return ListView(
-          padding: const EdgeInsets.all(12),
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: _listPadding,
           children: [
-            Row(
-              children: [
-                _StatBox('Orders', '${orders.length}'),
-                _StatBox('To ship', '$toShip'),
-                _StatBox('Revenue', '\$${revenue.toStringAsFixed(2)}'),
-              ],
-            ),
-            const SizedBox(height: 8),
+            _StatRow([
+              ('Orders', '${orders.length}', CG.tx),
+              ('To ship', '$toShip', CG.warn),
+              ('Revenue', '\$${revenue.toStringAsFixed(2)}', CG.brand),
+            ]),
+            const SizedBox(height: 14),
             if (orders.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(32),
-                child: Center(child: Text('No orders yet')),
-              ),
-            for (final o in orders)
+              const CGEmpty(title: 'No orders yet', message: 'New shop orders will show up here.'),
+            for (final o in orders) ...[
               _OrderCard(order: o, onSetStatus: (s) => _setStatus(o, s)),
+              const SizedBox(height: 12),
+            ],
           ],
         );
       },
@@ -232,11 +289,20 @@ class _OrdersTabState extends State<_OrdersTab> {
   }
 }
 
-class _OrderCard extends StatelessWidget {
+class _OrderCard extends StatefulWidget {
   final AdminOrder order;
   final ValueChanged<String> onSetStatus;
 
   const _OrderCard({required this.order, required this.onSetStatus});
+
+  @override
+  State<_OrderCard> createState() => _OrderCardState();
+}
+
+class _OrderCardState extends State<_OrderCard> {
+  late bool _open = widget.order.status == 'pending';
+
+  AdminOrder get order => widget.order;
 
   String get _address => [
         order.shipName,
@@ -248,66 +314,142 @@ class _OrderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final shipped = order.status == 'shipped';
-    return Card(
-      color: Colors.white,
-      child: ExpansionTile(
-        shape: const Border(),
-        title: Row(
-          children: [
-            Text('#${order.id}',
-                style: const TextStyle(fontWeight: FontWeight.w600)),
-            const SizedBox(width: 8),
-            _Pill(order.status,
-                shipped ? AppColors.success20 : AppColors.warning20),
-            const Spacer(),
-            Text('\$${order.total.toStringAsFixed(2)}',
-                style: const TextStyle(
-                    fontWeight: FontWeight.w600, color: AppColors.primary40)),
-          ],
-        ),
-        subtitle: Text(
-          '${order.shipName.isNotEmpty ? order.shipName : order.email}'
-          ' · ${_dateTime(order.createdAt)}',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        expandedCrossAxisAlignment: CrossAxisAlignment.start,
+    return CGCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('Items', style: TextStyle(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 4),
-          for (final i in order.items)
-            Text('${i.quantity} × ${i.name}  '
-                '(\$${(i.unitPrice * i.quantity).toStringAsFixed(2)})'),
-          const SizedBox(height: 12),
-          const Text('Customer', style: TextStyle(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 4),
-          SelectableText(order.email.isEmpty ? '(no email)' : order.email),
-          const SizedBox(height: 12),
-          const Text('Ship to', style: TextStyle(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 4),
-          SelectableText(_address.isEmpty ? '(no address given)' : _address),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              TextButton.icon(
-                onPressed: _address.isEmpty
-                    ? null
-                    : () {
-                        Clipboard.setData(ClipboardData(text: _address));
-                        _snack(context, 'Address copied');
-                      },
-                icon: const Icon(Icons.copy, size: 18),
-                label: const Text('Copy address'),
+          InkWell(
+            onTap: () => setState(() => _open = !_open),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text('#${order.id}', style: CG.display(20)),
+                            const SizedBox(width: 10),
+                            CGStatus(
+                              shipped ? 'Shipped' : 'Pending',
+                              color: shipped ? CG.ok : CG.warn,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${order.shipName.isNotEmpty ? order.shipName : order.email}'
+                          ' · ${_dateTime(order.createdAt)}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: CG.sub(13),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text('\$${order.total.toStringAsFixed(2)}',
+                      style: CG.body(17, weight: FontWeight.w700)),
+                  const SizedBox(width: 6),
+                  AnimatedRotation(
+                    turns: _open ? .5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: const Icon(HugeIcons.strokeRoundedArrowDown01, size: 18, color: CG.tx3),
+                  ),
+                ],
               ),
-              const Spacer(),
-              FilledButton(
-                style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary),
-                onPressed: () => onSetStatus(shipped ? 'pending' : 'shipped'),
-                child: Text(shipped ? 'Mark pending' : 'Mark shipped'),
-              ),
-            ],
+            ),
+          ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOut,
+            alignment: Alignment.topCenter,
+            child: !_open
+                ? const SizedBox(width: double.infinity)
+                : Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const CGLine(),
+                        const SizedBox(height: 14),
+                        _sectionLabel('Items'),
+                        for (final i in order.items)
+                          Text.rich(
+                            TextSpan(
+                              text: '${i.quantity} × ${i.name} ',
+                              style: CG.body(14),
+                              children: [
+                                TextSpan(
+                                  text: '(\$${(i.unitPrice * i.quantity).toStringAsFixed(2)})',
+                                  style: CG.mute(14),
+                                ),
+                              ],
+                            ),
+                          ),
+                        const SizedBox(height: 12),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _sectionLabel('Customer'),
+                                  SelectableText(
+                                    order.email.isEmpty ? '(no email)' : order.email,
+                                    style: CG.body(13.5),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _sectionLabel('Ship to'),
+                                  SelectableText(
+                                    _address.isEmpty ? '(no address given)' : _address,
+                                    style: CG.body(13.5, height: 1.4),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: CGButton.ghost(
+                                label: 'Copy address',
+                                icon: HugeIcons.strokeRoundedCopy01,
+                                small: true,
+                                onPressed: _address.isEmpty
+                                    ? null
+                                    : () {
+                                        Clipboard.setData(ClipboardData(text: _address));
+                                        _snack(context, 'Address copied');
+                                      },
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: CGButton(
+                                label: shipped ? 'Mark pending' : 'Mark shipped',
+                                small: true,
+                                onPressed: () =>
+                                    widget.onSetStatus(shipped ? 'pending' : 'shipped'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
           ),
         ],
       ),
@@ -334,7 +476,7 @@ class _SubscribersTabState extends State<_SubscribersTab> {
 
   Future<void> _reload() async {
     final next = DbService.adminSubscribers();
-    setState(() => _subs = next);
+    setState(() { _subs = next; });
     await next.catchError((_) => <AdminSubscriber>[]);
   }
 
@@ -343,6 +485,13 @@ class _SubscribersTabState extends State<_SubscribersTab> {
         _SubFilter.paying => s.isPaying,
         _SubFilter.trial => s.isTrialActive,
         _SubFilter.expired => !s.isPaying && !s.isTrialActive,
+      };
+
+  static String _label(_SubFilter f) => switch (f) {
+        _SubFilter.all => 'All',
+        _SubFilter.paying => 'Paying',
+        _SubFilter.trial => 'Trial',
+        _SubFilter.expired => 'Ended',
       };
 
   @override
@@ -355,34 +504,34 @@ class _SubscribersTabState extends State<_SubscribersTab> {
         final trial = subs.where((s) => s.isTrialActive).length;
         final shown = subs.where(_matches).toList();
         return ListView(
-          padding: const EdgeInsets.all(12),
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: _listPadding,
           children: [
-            Row(
-              children: [
-                _StatBox('Users', '${subs.length}'),
-                _StatBox('Paying', '$paying'),
-                _StatBox('On trial', '$trial'),
-              ],
-            ),
-            const SizedBox(height: 8),
+            _StatRow([
+              ('Users', '${subs.length}', CG.tx),
+              ('Paying', '$paying', CG.ok),
+              ('On trial', '$trial', CG.info),
+            ]),
+            const SizedBox(height: 16),
             Wrap(
               spacing: 8,
+              runSpacing: 8,
               children: [
                 for (final f in _SubFilter.values)
-                  ChoiceChip(
-                    label: Text(f.name[0].toUpperCase() + f.name.substring(1)),
+                  CGChip(
+                    _label(f),
                     selected: _filter == f,
-                    onSelected: (_) => setState(() => _filter = f),
+                    onTap: () => setState(() => _filter = f),
                   ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 14),
             if (shown.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(32),
-                child: Center(child: Text('Nobody here yet')),
-              ),
-            for (final s in shown) _SubscriberTile(sub: s),
+              const CGEmpty(title: 'Nobody here yet', message: 'Try another filter.'),
+            for (final s in shown) ...[
+              _SubscriberTile(sub: s),
+              const SizedBox(height: 10),
+            ],
           ],
         );
       },
@@ -402,29 +551,41 @@ class _SubscriberTile extends StatelessWidget {
     final String detail;
     if (sub.isPaying) {
       label = sub.status == 'past_due' ? 'Past due' : 'Paying';
-      color = sub.status == 'past_due' ? AppColors.warning20 : AppColors.success20;
+      color = sub.status == 'past_due' ? CG.warn : CG.ok;
       final end = sub.currentPeriodEnd;
-      detail = end == null
-          ? ''
-          : '${sub.cancelAtPeriodEnd ? 'Ends' : 'Renews'} ${_date(end)}';
+      detail = end == null ? '' : '${sub.cancelAtPeriodEnd ? 'Ends' : 'Renews'} ${_date(end)}';
     } else if (sub.isTrialActive) {
       label = 'Trial';
-      color = AppColors.info20;
+      color = CG.info;
       detail = 'Trial ends ${_date(sub.trialEndsAt!)}';
     } else {
       label = sub.status == 'canceled' ? 'Canceled' : 'Expired';
-      color = AppColors.neutral60;
+      color = CG.off;
       detail = '';
     }
-    return Card(
-      color: Colors.white,
-      child: ListTile(
-        title: SelectableText(sub.email.isEmpty ? '(no email)' : sub.email),
-        subtitle: Text([
-          'Joined ${_date(sub.signedUpAt)}',
-          if (detail.isNotEmpty) detail,
-        ].join(' · ')),
-        trailing: _Pill(label, color),
+    return CGCard(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SelectableText(
+                  sub.email.isEmpty ? '(no email)' : sub.email,
+                  style: CG.body(15, weight: FontWeight.w700),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  ['Joined ${_date(sub.signedUpAt)}', if (detail.isNotEmpty) detail].join(' · '),
+                  style: CG.sub(12.5),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          CGStatus(label, color: color),
+        ],
       ),
     );
   }
@@ -446,13 +607,14 @@ class _ShopTabState extends State<_ShopTab> {
 
   Future<void> _reload() async {
     final next = DbService.fetchProducts();
-    setState(() => _products = next);
+    setState(() { _products = next; });
     await next.catchError((_) => <Product>[]);
   }
 
   Future<void> _edit([Product? product]) async {
     final saved = await showDialog<bool>(
       context: context,
+      barrierColor: const Color(0x6B14262A),
       builder: (_) => _ProductDialog(product: product),
     );
     if (saved == true) _reload();
@@ -460,55 +622,59 @@ class _ShopTabState extends State<_ShopTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        onPressed: () => _edit(),
-        icon: const Icon(Icons.add),
-        label: const Text('Add item'),
-      ),
-      body: _Loader<List<Product>>(
-        future: _products,
-        onRefresh: _reload,
-        builder: (products) => ListView(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 88),
-          children: [
-            if (products.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(32),
-                child: Center(child: Text('No products yet')),
-              ),
-            for (final p in products)
-              Card(
-                color: Colors.white,
-                child: ListTile(
-                  onTap: () => _edit(p),
-                  leading: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: SizedBox(
-                      width: 48,
-                      height: 48,
-                      child: p.imageUrl != null && p.imageUrl!.isNotEmpty
-                          ? Image.network(p.imageUrl!,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Image.asset(
-                                  'assets/images/item.png',
-                                  fit: BoxFit.cover))
-                          : Image.asset('assets/images/item.png',
-                              fit: BoxFit.cover),
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: _Loader<List<Product>>(
+            future: _products,
+            onRefresh: _reload,
+            builder: (products) => ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: _listPadding,
+              children: [
+                if (products.isEmpty)
+                  const CGEmpty(title: 'No products yet', message: 'Add the first shop item.'),
+                for (final p in products) ...[
+                  CGCard(
+                    onTap: () => _edit(p),
+                    padding: const EdgeInsets.fromLTRB(10, 10, 8, 10),
+                    child: Row(
+                      children: [
+                        CrystalThumb(
+                          name: p.name,
+                          imageUrl: p.imageUrl,
+                          width: 52,
+                          height: 52,
+                          radius: 14,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(p.name, style: CG.display(18).copyWith(height: 1.15)),
+                              Text(
+                                '\$${p.price.toStringAsFixed(2)} · ${p.stock} in stock',
+                                style: CG.sub(12.5).copyWith(color: p.stock <= 0 ? CG.danger : null),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.all(10),
+                          child: Icon(HugeIcons.strokeRoundedEdit02, size: 18, color: CG.tx2),
+                        ),
+                      ],
                     ),
                   ),
-                  title: Text(p.name),
-                  subtitle: Text(
-                      '\$${p.price.toStringAsFixed(2)} · ${p.stock} in stock'),
-                  trailing: const Icon(Icons.edit_outlined),
-                ),
-              ),
-          ],
+                  const SizedBox(height: 10),
+                ],
+              ],
+            ),
+          ),
         ),
-      ),
+        _Fab(label: 'Add item', onPressed: () => _edit()),
+      ],
     );
   }
 }
@@ -525,10 +691,8 @@ class _ProductDialog extends StatefulWidget {
 class _ProductDialogState extends State<_ProductDialog> {
   late final _name = TextEditingController(text: widget.product?.name);
   late final _headline = TextEditingController(text: widget.product?.headline);
-  late final _price = TextEditingController(
-      text: widget.product?.price.toStringAsFixed(2));
-  late final _stock =
-      TextEditingController(text: '${widget.product?.stock ?? 10}');
+  late final _price = TextEditingController(text: widget.product?.price.toStringAsFixed(2));
+  late final _stock = TextEditingController(text: '${widget.product?.stock ?? 10}');
   late final _imageUrl = TextEditingController(text: widget.product?.imageUrl);
   bool _busy = false;
 
@@ -571,24 +735,15 @@ class _ProductDialogState extends State<_ProductDialog> {
 
   Future<void> _delete() async {
     final p = widget.product!;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Delete ${p.name}?'),
-        content: const Text(
-            'This removes the product from the shop and from all carts.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Cancel')),
-          TextButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text('Delete',
-                  style: TextStyle(color: AppColors.danger))),
-        ],
-      ),
+    final confirmed = await showCGConfirm(
+      context,
+      title: 'Delete ${p.name}?',
+      message: 'This removes the product from the shop and from all carts.',
+      confirmLabel: 'Delete',
+      destructive: true,
+      icon: HugeIcons.strokeRoundedDelete02,
     );
-    if (confirmed != true || !mounted) return;
+    if (!confirmed || !mounted) return;
     setState(() => _busy = true);
     try {
       await DbService.deleteProduct(p.id);
@@ -603,52 +758,51 @@ class _ProductDialogState extends State<_ProductDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(_isNew ? 'Add shop item' : 'Edit shop item'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-                controller: _name,
-                decoration: const InputDecoration(labelText: 'Name')),
-            TextField(
-                controller: _headline,
-                decoration:
-                    const InputDecoration(labelText: 'Headline (optional)')),
-            TextField(
-              controller: _price,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(labelText: 'Price (\$)'),
-            ),
-            TextField(
-              controller: _stock,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Stock'),
-            ),
-            TextField(
-                controller: _imageUrl,
-                decoration:
-                    const InputDecoration(labelText: 'Image URL (optional)')),
-          ],
-        ),
+    return CGDialog(
+      title: _isNew ? 'Add shop item' : 'Edit shop item',
+      body: Column(
+        children: [
+          CGField(label: 'Name', controller: _name, small: true),
+          const SizedBox(height: 12),
+          CGField(label: 'Headline (optional)', controller: _headline, small: true),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: CGField(
+                  label: 'Price (\$)',
+                  controller: _price,
+                  small: true,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: CGField(
+                  label: 'Stock',
+                  controller: _stock,
+                  small: true,
+                  keyboardType: TextInputType.number,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          CGField(label: 'Image URL (optional)', controller: _imageUrl, small: true),
+        ],
       ),
       actions: [
-        if (!_isNew)
-          TextButton(
-            onPressed: _busy ? null : _delete,
-            child: const Text('Delete',
-                style: TextStyle(color: AppColors.danger)),
-          ),
-        TextButton(
+        CGButton(label: _isNew ? 'Add' : 'Save', loading: _busy, onPressed: _save),
+        CGButton.ghost(
+          label: 'Cancel',
           onPressed: _busy ? null : () => Navigator.of(context).pop(false),
-          child: const Text('Cancel'),
         ),
-        TextButton(
-          onPressed: _busy ? null : _save,
-          child: Text(_isNew ? 'Add' : 'Save'),
-        ),
+        if (!_isNew)
+          CGButton(
+            label: 'Delete item',
+            kind: CGButtonKind.danger,
+            onPressed: _busy ? null : _delete,
+          ),
       ],
     );
   }
@@ -671,14 +825,14 @@ class _CrystalsTabState extends State<_CrystalsTab> {
 
   Future<void> _reload() async {
     final next = DbService.fetchCrystals();
-    setState(() => _crystals = next);
+    setState(() { _crystals = next; });
     await next.catchError((_) => <Crystal>[]);
   }
 
   Future<void> _edit([Crystal? crystal]) async {
     final saved = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        fullscreenDialog: true,
+      SmoothPageRoute(
+        transition: SmoothTransition.slide,
         builder: (_) => _CrystalEditor(crystal: crystal),
       ),
     );
@@ -687,69 +841,79 @@ class _CrystalsTabState extends State<_CrystalsTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        onPressed: () => _edit(),
-        icon: const Icon(Icons.add),
-        label: const Text('Add crystal'),
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Search crystals',
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: Colors.white,
-                isDense: true,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide.none,
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 2, 20, 12),
+                child: CGSearch(
+                  hint: 'Search crystals',
+                  onChanged: (v) => setState(() => _query = v.trim().toLowerCase()),
                 ),
               ),
-              onChanged: (v) => setState(() => _query = v.trim().toLowerCase()),
-            ),
-          ),
-          Expanded(
-            child: _Loader<List<Crystal>>(
-              future: _crystals,
-              onRefresh: _reload,
-              builder: (crystals) {
-                final shown = _query.isEmpty
-                    ? crystals
-                    : crystals
-                        .where((c) => c.name.toLowerCase().contains(_query))
-                        .toList();
-                return ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 88),
-                  itemCount: shown.length,
-                  itemBuilder: (context, i) {
-                    final c = shown[i];
-                    return Card(
-                      color: Colors.white,
-                      child: ListTile(
-                        onTap: () => _edit(c),
-                        title: Text(c.name),
-                        subtitle: Text(
-                          c.headline.isEmpty ? '(no headline)' : c.headline,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        trailing: const Icon(Icons.edit_outlined),
-                      ),
+              Expanded(
+                child: _Loader<List<Crystal>>(
+                  future: _crystals,
+                  onRefresh: _reload,
+                  builder: (crystals) {
+                    final shown = _query.isEmpty
+                        ? crystals
+                        : crystals.where((c) => c.name.toLowerCase().contains(_query)).toList();
+                    return ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: _listPadding,
+                      itemCount: shown.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      itemBuilder: (context, i) {
+                        final c = shown[i];
+                        return CGCard(
+                          onTap: () => _edit(c),
+                          padding: const EdgeInsets.fromLTRB(10, 10, 8, 10),
+                          child: Row(
+                            children: [
+                              GemTile(
+                                color: CG.crystalColor(c.name),
+                                width: 52,
+                                height: 52,
+                                radius: 14,
+                                gemWidth: 20,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(c.name, style: CG.display(18).copyWith(height: 1.15)),
+                                    Text(
+                                      c.headline.isEmpty ? 'No headline yet' : c.headline,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: c.headline.isEmpty
+                                          ? CG.body(12.5, color: CG.warn)
+                                          : CG.sub(12.5),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Padding(
+                                padding: EdgeInsets.all(10),
+                                child: Icon(HugeIcons.strokeRoundedEdit02, size: 18, color: CG.tx2),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     );
                   },
-                );
-              },
-            ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+        _Fab(label: 'Add crystal', onPressed: () => _edit()),
+      ],
     );
   }
 }
@@ -766,8 +930,7 @@ class _CrystalEditor extends StatefulWidget {
 class _CrystalEditorState extends State<_CrystalEditor> {
   late final _name = TextEditingController(text: widget.crystal?.name);
   late final _headline = TextEditingController(text: widget.crystal?.headline);
-  late final _description =
-      TextEditingController(text: widget.crystal?.description);
+  late final _description = TextEditingController(text: widget.crystal?.description);
   late final _starSign = TextEditingController(text: widget.crystal?.starSign);
   late final _chakras = TextEditingController(text: widget.crystal?.chakras);
   bool _busy = false;
@@ -799,24 +962,15 @@ class _CrystalEditorState extends State<_CrystalEditor> {
 
   Future<void> _delete() async {
     final name = widget.crystal!.name;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Delete $name?'),
-        content: const Text(
-            'Scans that detect this crystal will no longer show its details.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Cancel')),
-          TextButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text('Delete',
-                  style: TextStyle(color: AppColors.danger))),
-        ],
-      ),
+    final confirmed = await showCGConfirm(
+      context,
+      title: 'Delete $name?',
+      message: 'Scans that detect this crystal will no longer show its details.',
+      confirmLabel: 'Delete',
+      destructive: true,
+      icon: HugeIcons.strokeRoundedDelete02,
     );
-    if (confirmed != true || !mounted) return;
+    if (!confirmed || !mounted) return;
     setState(() => _busy = true);
     try {
       await DbService.deleteCrystal(name);
@@ -829,64 +983,61 @@ class _CrystalEditorState extends State<_CrystalEditor> {
     }
   }
 
-  Widget _field(TextEditingController c, String label,
-      {int maxLines = 1, bool enabled = true, String? helper}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: TextField(
-        controller: c,
-        enabled: enabled,
-        minLines: maxLines > 1 ? 4 : 1,
-        maxLines: maxLines,
-        decoration: InputDecoration(
-          labelText: label,
-          helperText: helper,
-          helperMaxLines: 2,
-          alignLabelWithHint: true,
-          filled: true,
-          fillColor: Colors.white,
-          border: const OutlineInputBorder(),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.neutral20,
-      appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        title: Text(_isNew ? 'Add crystal' : widget.crystal!.name),
-        actions: [
-          if (!_isNew)
-            IconButton(
-              tooltip: 'Delete',
-              onPressed: _busy ? null : _delete,
-              icon: const Icon(Icons.delete_outline),
+    final title = _isNew ? 'Add crystal' : widget.crystal!.name;
+    return CGPage(
+      glow: _isNew ? CG.mint : CG.crystalColor(title),
+      glowTop: -340,
+      child: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+              child: Row(
+                children: [
+                  const CGBack(),
+                  const Spacer(),
+                  if (!_isNew)
+                    CGIconButton(
+                      icon: HugeIcons.strokeRoundedDelete02,
+                      tooltip: 'Delete',
+                      foreground: CG.danger,
+                      onTap: _busy ? null : _delete,
+                    ),
+                ],
+              ),
             ),
-          TextButton(
-            onPressed: _busy ? null : _save,
-            child: const Text('Save',
-                style: TextStyle(color: Colors.white, fontSize: 16)),
-          ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // The name is how scans find the crystal, so it's fixed once created.
-          _field(_name, 'Name',
-              enabled: _isNew,
-              helper: _isNew
-                  ? 'Must match the scanner\'s class name for scans to find it.'
-                  : null),
-          _field(_headline, 'Headline'),
-          _field(_description, 'Description', maxLines: 20),
-          _field(_starSign, 'Star sign'),
-          _field(_chakras, 'Chakras'),
-        ],
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                children: [
+                  CGHeading(eyebrow: 'Admin · Crystals', title: title, size: 32),
+                  const SizedBox(height: 22),
+                  // The name is how scans find the crystal, so it's fixed once created.
+                  CGField(
+                    label: 'Name',
+                    controller: _name,
+                    enabled: _isNew,
+                    helper: _isNew ? "Must match the scanner's class name for scans to find it." : null,
+                  ),
+                  const SizedBox(height: 16),
+                  CGField(label: 'Headline', controller: _headline),
+                  const SizedBox(height: 16),
+                  CGField(label: 'Description', controller: _description, maxLines: 20),
+                  const SizedBox(height: 16),
+                  CGField(label: 'Star sign', controller: _starSign),
+                  const SizedBox(height: 16),
+                  CGField(label: 'Chakras', controller: _chakras, hint: 'e.g. Crown, Third Eye'),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+              child: CGButton(label: 'Save', loading: _busy, onPressed: _save),
+            ),
+          ],
+        ),
       ),
     );
   }

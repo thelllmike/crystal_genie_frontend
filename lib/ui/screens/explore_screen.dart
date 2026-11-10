@@ -1,10 +1,8 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:hugeicons/hugeicons.dart';
-import '../../core/constants/colors.dart';
+import '../../core/constants/feature_flags.dart';
 import '../../core/services/db_service.dart';
 import '../../models/crystal.dart';
-import '../widgets/glass.dart';
+import '../widgets/cg.dart';
 import '../widgets/page_transitions.dart';
 import 'crystal_detail_screen.dart';
 
@@ -18,8 +16,17 @@ class ExploreScreen extends StatefulWidget {
 
 class _ExploreScreenState extends State<ExploreScreen> {
   final TextEditingController _searchController = TextEditingController();
-  final List<String> _filters = ['All'];
-  final int _selectedFilter = 0;
+
+  /// Mood filters match words in a crystal's headline and description.
+  static const Map<String, List<String>> _filters = {
+    'All': [],
+    'Calm': ['calm', 'peace', 'sleep', 'tranquil', 'sooth', 'relax', 'stress'],
+    'Protection': ['protect', 'ground', 'shield', 'negative'],
+    'Love': ['love', 'heart', 'compassion', 'relationship'],
+    'Abundance': ['abundan', 'prosper', 'wealth', 'success', 'luck', 'money'],
+    'Clarity': ['clarity', 'focus', 'mind', 'intuition', 'wisdom'],
+  };
+  String _filter = 'All';
 
   List<Crystal> _allCrystals = [];
   bool _loading = true;
@@ -32,6 +39,12 @@ class _ExploreScreenState extends State<ExploreScreen> {
     _load();
   }
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   Future<void> _load() async {
     try {
       final crystals = await DbService.fetchCrystals();
@@ -39,6 +52,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
       setState(() {
         _allCrystals = crystals;
         _loading = false;
+        _error = null;
       });
     } catch (e) {
       if (!mounted) return;
@@ -50,287 +64,129 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }
 
   List<Crystal> get _visibleCrystals {
-    if (_query.isEmpty) return _allCrystals;
     final q = _query.toLowerCase();
-    return _allCrystals
-        .where((c) =>
-            c.name.toLowerCase().contains(q) ||
-            c.headline.toLowerCase().contains(q))
-        .toList();
+    final words = _filters[_filter] ?? const [];
+    return _allCrystals.where((c) {
+      final text = '${c.name} ${c.headline} ${c.description}'.toLowerCase();
+      if (q.isNotEmpty &&
+          !c.name.toLowerCase().contains(q) &&
+          !c.headline.toLowerCase().contains(q)) {
+        return false;
+      }
+      if (words.isNotEmpty && !words.any(text.contains)) return false;
+      return true;
+    }).toList();
   }
+
+  void _open(Crystal c) => Navigator.of(context).push(
+        SmoothPageRoute(
+          transition: SmoothTransition.slide,
+          builder: (_) => CrystalDetailScreen(crystalName: c.name),
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {
-    final double screenWidth = MediaQuery.of(context).size.width;
-    final double outerWidth = screenWidth - 32; // 16px padding each side
-
-    return Scaffold(
-      backgroundColor: AppColors.neutral20,
-      body: Stack(
-        children: [
-          // Background title
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 45,
-            left: 0,
-            right: 0,
-            child:
-                const Center(child: BackgroundTitle(text: 'Crystal library')),
-          ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(height: screenWidth * 0.15), // title overlap, like home
-                  // Search & filter row
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
-                      child: Container(
-                        width: outerWidth,
-                        height: 40,
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        decoration: BoxDecoration(
-                          color: const Color(0x59FBF5F3), // White-35
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Row(
-                          children: [
-                            // Search box
-                            Container(
-                              width: 328,
-                              height: 24,
-                              padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
-                              decoration: BoxDecoration(
-                                color: const Color(0x80FBF5F3), // White-50
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: TextField(
-                                      controller: _searchController,
-                                      onChanged: (v) =>
-                                          setState(() => _query = v.trim()),
-                                      decoration: const InputDecoration(
-                                        border: InputBorder.none,
-                                        isCollapsed: true,
-                                        hintText: 'Search for crystals',
-                                        hintStyle: TextStyle(
-                                          fontFamily: 'Montserrat',
-                                          fontWeight: FontWeight.w300,
-                                          fontSize: 14,
-                                          height: 1.0,
-                                        ),
-                                      ),
-                                      style: const TextStyle(
-                                        fontFamily: 'Montserrat',
-                                        fontWeight: FontWeight.w300,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ),
-                                  const Icon(
-                                    HugeIcons.strokeRoundedSearch01,
-                                    size: 20,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            const Icon(
-                              HugeIcons.strokeRoundedFilterHorizontal,
-                              size: 24,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Active filter label
-                  Row(
+    final items = _visibleCrystals;
+    return CGPage(
+      glowTop: -340,
+      child: SafeArea(
+        bottom: false,
+        child: RefreshIndicator(
+          color: CG.brand,
+          onRefresh: _load,
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                sliver: SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Filters: ',
-                        style: TextStyle(
-                          fontFamily: 'Montserrat',
-                          fontSize: 14,
-                        ),
-                      ),
-                      Text(
-                        _filters[_selectedFilter],
-                        style: const TextStyle(
-                          fontFamily: 'Montserrat',
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
+                      const CGHeading(eyebrow: 'Explore', title: 'Crystal library'),
+                      const SizedBox(height: 18),
+                      CGSearch(
+                        hint: 'Search for crystals',
+                        controller: _searchController,
+                        onChanged: (v) => setState(() => _query = v.trim()),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  // Crystal list
-                  Expanded(
-                    child: _loading
-                        ? const Center(child: CircularProgressIndicator())
-                        : _error != null
-                            ? Center(
-                                child: Text(
-                                  'Could not load the library:\n$_error',
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                      fontFamily: 'Montserrat'),
-                                ),
-                              )
-                            : _visibleCrystals.isEmpty
-                                ? const Center(
-                                    child: Text(
-                                      'No crystals found',
-                                      style: TextStyle(
-                                        fontFamily: 'Montserrat',
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  )
-                                : ListView.separated(
-                                    padding:
-                                        const EdgeInsets.only(bottom: 100),
-                                    itemCount: _visibleCrystals.length,
-                                    separatorBuilder: (_, __) =>
-                                        const SizedBox(height: 16),
-                                    itemBuilder: (context, index) {
-                                      final item = _visibleCrystals[index];
-                                      return GestureDetector(
-                                        onTap: () =>
-                                            Navigator.of(context).push(
-                                          SmoothPageRoute(
-                                            transition:
-                                                SmoothTransition.slide,
-                                            builder: (_) => CrystalDetailScreen(
-                                                crystalName: item.name),
-                                          ),
-                                        ),
-                                        child: _CrystalCard(
-                                          imageUrl: item.imageUrl,
-                                          title: item.name,
-                                          subtitle: item.headline,
-                                          description: item.description,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ),
-          // The bottom navigation bar is owned by MainShell.
-        ],
-      ),
-    );
-  }
-}
-
-/// Card widget for each crystal entry.
-class _CrystalCard extends StatelessWidget {
-  final String? imageUrl;
-  final String title;
-  final String subtitle;
-  final String description;
-
-  const _CrystalCard({
-    required this.imageUrl,
-    required this.title,
-    required this.subtitle,
-    required this.description,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: const Color(0x80FBF5F3), // White-50
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Crystal photo — only when there is one to show (no
-              // placeholder picture; see FeatureFlags.showCrystalPhotos).
-              if (imageUrl != null) ...[
-                Container(
-                  width: 104,
-                  height: 104,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: const Color(0xFFFBF5F3),
-                      width: 1,
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  height: 64,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
+                    itemCount: _filters.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (_, i) {
+                      final f = _filters.keys.elementAt(i);
+                      return CGChip(
+                        f,
+                        selected: f == _filter,
+                        onTap: () => setState(() => _filter = f),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              if (_loading)
+                const SliverFillRemaining(hasScrollBody: false, child: CGLoading())
+              else if (_error != null)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 140),
+                    child: Center(
+                      child: CGEmpty(
+                        title: 'Could not load the library',
+                        message: _error!,
+                        action: 'Try again',
+                        onAction: () {
+                          setState(() => _loading = true);
+                          _load();
+                        },
+                      ),
                     ),
-                    image: DecorationImage(
-                      image: NetworkImage(imageUrl!),
-                      fit: BoxFit.cover,
-                      onError: (_, __) {},
+                  ),
+                )
+              else if (items.isEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 140),
+                    child: Center(
+                      child: CGEmpty(
+                        title: 'No crystals found',
+                        message: 'Try another name or filter.',
+                      ),
+                    ),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 140),
+                  sliver: SliverGrid(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 14,
+                      crossAxisSpacing: 14,
+                      // Grows with the phone's text size so text never clips.
+                      mainAxisExtent: 148 + MediaQuery.textScalerOf(context).scale(66),
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (_, i) => _CrystalCard(
+                        crystal: items[i],
+                        onTap: () => _open(items[i]),
+                      ),
+                      childCount: items.length,
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
-              ],
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontFamily: 'PlayfairDisplay',
-                        fontWeight: FontWeight.w600,
-                        fontSize: 20,
-                        height: 1.1,
-                        color: Color(0xFF1A181B),
-                      ),
-                    ),
-                    if (subtitle.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontFamily: 'Montserrat',
-                          fontWeight: FontWeight.w300,
-                          fontStyle: FontStyle.italic,
-                          fontSize: 12,
-                          color: Color(0xFF5E5E5E),
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 6),
-                    Text(
-                      description,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontFamily: 'Montserrat',
-                        fontWeight: FontWeight.w400,
-                        fontSize: 12,
-                        height: 1.35,
-                        color: Color(0xFF303030),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
         ),
@@ -339,3 +195,55 @@ class _CrystalCard extends StatelessWidget {
   }
 }
 
+/// Grid card for a crystal in the library.
+class _CrystalCard extends StatelessWidget {
+  final Crystal crystal;
+  final VoidCallback onTap;
+
+  const _CrystalCard({required this.crystal, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final url = FeatureFlags.showCrystalPhotos ? crystal.imageUrl : null;
+    return CGCard(
+      onTap: onTap,
+      padding: const EdgeInsets.fromLTRB(10, 10, 10, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LayoutBuilder(
+            builder: (_, c) => CrystalThumb(
+              name: crystal.name,
+              imageUrl: url,
+              width: c.maxWidth,
+              height: 112,
+              fallbackChild: Gem(color: CG.crystalColor(crystal.name), width: 44),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              crystal.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: CG.display(19).copyWith(height: 1.15),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                crystal.headline,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: CG.sub(12.5).copyWith(height: 1.35),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
